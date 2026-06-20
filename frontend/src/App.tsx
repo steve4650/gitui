@@ -21,6 +21,14 @@ function App() {
   const [loadingCommits, setLoadingCommits] = useState(true);
   const [loadingDiff, setLoadingDiff] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentBranch, setCurrentBranch] = useState<string | null>(null);
+  const [theme, setTheme] = useState<string>(() => {
+    try {
+      return localStorage.getItem("theme") || "dark";
+    } catch (e) {
+      return "dark";
+    }
+  });
 
   useEffect(() => {
     async function loadCommits() {
@@ -33,6 +41,7 @@ function App() {
         }
         const body = await response.json();
         setCommits(body.commits ?? []);
+        setCurrentBranch(body.current_branch ?? null);
         if (body.commits?.length) {
           setSelectedCommit(body.commits[0].sha);
         }
@@ -45,6 +54,19 @@ function App() {
 
     loadCommits();
   }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("light", theme === "light");
+    try {
+      localStorage.setItem("theme", theme);
+    } catch (e) {
+      /* ignore */
+    }
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((t) => (t === "light" ? "dark" : "light"));
+  }
 
   useEffect(() => {
     if (!selectedCommit) {
@@ -75,6 +97,12 @@ function App() {
   return (
     <div id="app">
       <aside className="sidebar">
+        <div className="toolbar">
+          <div className="branch-name">{currentBranch ? `branch: ${currentBranch}` : "no branch"}</div>
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === "light" ? "🌞" : "🌙"}
+          </button>
+        </div>
         <h1>Commit history</h1>
         {loadingCommits && <p className="loading">Loading commits...</p>}
         {error && <p className="loading">{error}</p>}
@@ -92,7 +120,6 @@ function App() {
         ))}
       </aside>
       <main className="main">
-        <h1>Diff viewer</h1>
         {loadingDiff && <p className="loading">Loading patch...</p>}
         {diff ? (
           <div>

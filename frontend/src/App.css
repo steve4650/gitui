@@ -16,6 +16,56 @@
 body {
   margin: 0;
 }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 6px 6px 8px;
+}
+
+.branch-name {
+  color: #9ca3af;
+  font-size: 0.82rem;
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Light theme overrides */
+body.light {
+  background: #f7fafc;
+  color: #0b1220;
+}
+
+body.light .sidebar {
+  background: #ffffff;
+  border-right: 1px solid #e6edf3;
+}
+
+body.light .commit-button {
+  background: #ffffff;
+  border-color: #e6edf3;
+  color: #0b1220;
+}
+
+body.light .commit-button:hover,
+body.light .commit-button.selected {
+  border-color: #2563eb;
+  background: #eef6ff;
+}
+
+body.light .commit-diff {
+  background: #ffffff;
+  color: #0b1220;
+  border-color: #e6edf3;
+}
 #app {
   min-height: 100vh;
   display: grid;
