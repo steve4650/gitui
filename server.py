@@ -14,7 +14,7 @@ def format_commit(commit: pygit2.Commit) -> dict[str, object]:
         "message": commit.message.strip(),
         "author_name": commit.author.name,
         "author_email": commit.author.email,
-        "commit_time": datetime.datetime.utcfromtimestamp(commit.commit_time).isoformat() + "Z",
+        "commit_time": datetime.datetime.fromtimestamp(commit.commit_time, tz=datetime.UTC).isoformat(),
         "parents": [str(parent.id) for parent in commit.parents],
     }
 
@@ -28,17 +28,17 @@ def make_repository(repo_root: str | None = None) -> pygit2.Repository:
 class CommitListHandler(tornado.web.RequestHandler):
     """API endpoint that returns the current branch commit history."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    async def get(self) -> None:
+    async def get(self) -> None:  # ty:ignore[invalid-method-override]
         if self.repo.head_is_unborn:
             self.write({"current_branch": None, "commits": []})
             return
 
         head = self.repo.head
         branch_name = head.shorthand
-        walker = self.repo.walk(head.target, pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_TIME)
+        walker = self.repo.walk(head.target, pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_TIME)  # ty:ignore[invalid-argument-type]
 
         commits = []
         for index, commit in enumerate(walker):
@@ -52,10 +52,10 @@ class CommitListHandler(tornado.web.RequestHandler):
 class CommitDiffHandler(tornado.web.RequestHandler):
     """API endpoint that returns the patch for a single commit."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    def get(self, sha: str) -> None:
+    def get(self, sha: str) -> None:  # ty:ignore[invalid-method-override]
         try:
             commit = self.repo[sha]
         except KeyError as err:
@@ -70,7 +70,7 @@ class CommitDiffHandler(tornado.web.RequestHandler):
             empty_tree_id = self.repo.TreeBuilder().write()
             parent_tree = self.repo[empty_tree_id]
 
-        diff = self.repo.diff(parent_tree, commit.tree)
+        diff = self.repo.diff(parent_tree, commit.tree)  # ty:ignore[no-matching-overload]
         patch_text = getattr(diff, "patch", None)
         if patch_text is None:
             patch_text = str(diff)
@@ -109,10 +109,10 @@ def _status_type(flag: int, staged: bool = False) -> str:
 class StatusHandler(tornado.web.RequestHandler):
     """API endpoint returning staged and unstaged file lists and current branch."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    async def get(self) -> None:
+    async def get(self) -> None:  # ty:ignore[invalid-method-override]
         branch = None if self.repo.head_is_unborn else self.repo.head.shorthand
 
         statuses = self.repo.status()
@@ -130,10 +130,10 @@ class StatusHandler(tornado.web.RequestHandler):
 class StageHandler(tornado.web.RequestHandler):
     """API endpoint to stage/unstage files."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    async def post(self) -> None:
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
         data = tornado.escape.json_decode(self.request.body)
         path = data.get("path")
         action = data.get("action")
@@ -202,10 +202,10 @@ class StageHandler(tornado.web.RequestHandler):
 class StageAllHandler(tornado.web.RequestHandler):
     """API endpoint to stage or unstage all files at once."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    async def post(self) -> None:
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
         data = tornado.escape.json_decode(self.request.body)
         action = data.get("action")
         if action not in ("add", "remove"):
@@ -228,10 +228,10 @@ class StageAllHandler(tornado.web.RequestHandler):
 class CommitCreateHandler(tornado.web.RequestHandler):
     """API endpoint to create a commit from the current index."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    async def post(self) -> None:
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
         data = tornado.escape.json_decode(self.request.body)
         message = data.get("message")
         if not message:
@@ -252,17 +252,17 @@ class CommitCreateHandler(tornado.web.RequestHandler):
             raise tornado.web.HTTPError(500, reason=str(exc)) from exc
 
         commit = self.repo[commit_id]
-        response = format_commit(commit)
+        response = format_commit(commit)  # ty:ignore[invalid-argument-type]
         self.write(response)
 
 
 class DiscardHandler(tornado.web.RequestHandler):
     """API endpoint to discard (revert) unstaged changes for a file."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    async def post(self) -> None:
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
         data = tornado.escape.json_decode(self.request.body)
         path = data.get("path")
         if not path:
@@ -298,7 +298,7 @@ class DiscardHandler(tornado.web.RequestHandler):
 class HealthHandler(tornado.web.RequestHandler):
     """Simple health-check endpoint."""
 
-    async def get(self) -> None:
+    async def get(self) -> None:  # ty:ignore[invalid-method-override]
         self.write({"status": "ok"})
 
 
@@ -328,10 +328,10 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
 class GitDiffHandler(tornado.web.RequestHandler):
     """Return diffs for staged/unstaged files or entire section using git CLI for accuracy."""
 
-    def initialize(self, repo: pygit2.Repository) -> None:
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
         self.repo = repo
 
-    async def get(self) -> None:
+    async def get(self) -> None:  # ty:ignore[invalid-method-override]
         scope = self.get_argument("scope", None)
         path = self.get_argument("path", None)
 

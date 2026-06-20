@@ -46,7 +46,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
             tree,
             parents,
         )
-        return self.repo[commit_id]
+        return self.repo[commit_id]  # ty:ignore[invalid-return-type]
 
     def _initialize_repo(self) -> None:
         self._write_file("README.md", "Initial commit\n")
