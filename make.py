@@ -16,6 +16,7 @@ def fmt():
     run("bun run oxlint --fix --fix-dangerously")
     run("uv run ruff format")
     run("uv run ruff check --fix --unsafe-fixes")
+    run("uv run ty check --fix")
 
 
 def lint():
@@ -25,6 +26,7 @@ def lint():
     run("bun run oxlint")
     run("uv run ruff format --check")
     run("uv run ruff check")
+    run("uv run ty check")
 
 
 def test():
