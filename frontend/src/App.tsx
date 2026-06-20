@@ -22,7 +22,7 @@ function App() {
   const [loadingCommits, setLoadingCommits] = useState(true);
   const [loadingDiff, setLoadingDiff] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentBranch, setCurrentBranch] = useState<string | null>(null);
+  const [, setCurrentBranch] = useState<string | null>(null);
   const [theme, setTheme] = useState<string>(() => {
     try {
       return localStorage.getItem("theme") || "dark";
@@ -99,25 +99,39 @@ function App() {
     <div id="app">
       <aside className="sidebar">
         <div className="toolbar">
-          <div className="branch-name">{currentBranch ? `branch: ${currentBranch}` : "no branch"}</div>
+          <div />
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "light" ? "🌞" : "🌙"}
           </button>
         </div>
-        <StatusPanel onRefresh={() => { /* refresh commits after status change */
-          (async () => {
-            setLoadingCommits(true);
-            try {
-              const res = await fetch('/api/commits');
-              if (res.ok) {
-                const body = await res.json();
-                setCommits(body.commits ?? []);
-                setCurrentBranch(body.current_branch ?? null);
-              }
-            } catch (_) {}
-            setLoadingCommits(false);
-          })();
-        }} />
+        <StatusPanel
+          onRefresh={() => {
+            /* refresh commits after status change */
+            (async () => {
+              setLoadingCommits(true);
+              try {
+                const res = await fetch("/api/commits");
+                if (res.ok) {
+                  const body = await res.json();
+                  setCommits(body.commits ?? []);
+                  setCurrentBranch(body.current_branch ?? null);
+                }
+              } catch (_) {}
+              setLoadingCommits(false);
+            })();
+          }}
+          onShowDiff={(patch: string, title: string) => {
+            setDiff({
+              sha: "",
+              message: title,
+              author_name: "",
+              author_email: "",
+              commit_time: new Date().toISOString(),
+              parents: [],
+              patch,
+            });
+          }}
+        />
         <h1>Commit history</h1>
         {loadingCommits && <p className="loading">Loading commits...</p>}
         {error && <p className="loading">{error}</p>}
@@ -141,7 +155,8 @@ function App() {
             <div className="commit-meta">
               <strong>{diff.message}</strong>
               <p>
-                {diff.author_name} · {new Date(diff.commit_time).toLocaleString()}
+                {diff.author_name ?? ""} ·{" "}
+                {diff.commit_time ? new Date(diff.commit_time).toLocaleString() : ""}
               </p>
             </div>
             <div className="commit-diff" aria-live="polite">
@@ -149,7 +164,13 @@ function App() {
                 const isAdded = line.startsWith("+");
                 const isRemoved = line.startsWith("-");
                 const isHunk = line.startsWith("@@");
-                const className = isAdded ? "diff-line added" : isRemoved ? "diff-line removed" : isHunk ? "diff-line hunk" : "diff-line";
+                const className = isAdded
+                  ? "diff-line added"
+                  : isRemoved
+                    ? "diff-line removed"
+                    : isHunk
+                      ? "diff-line hunk"
+                      : "diff-line";
                 // keep empty lines visible
                 const content = line === "" ? "\u00A0" : line;
                 return (

@@ -1,5 +1,6 @@
 import datetime
 import os
+import subprocess
 from pathlib import Path
 
 import pygit2
@@ -86,10 +87,7 @@ class StatusHandler(tornado.web.RequestHandler):
         self.repo = repo
 
     async def get(self) -> None:
-        if self.repo.head_is_unborn:
-            branch = None
-        else:
-            branch = self.repo.head.shorthand
+        branch = None if self.repo.head_is_unborn else self.repo.head.shorthand
 
         statuses = self.repo.status()
         staged = []
@@ -222,6 +220,7 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
         (r"/api/status", StatusHandler, dict(repo=repo)),
         (r"/api/stage", StageHandler, dict(repo=repo)),
         (r"/api/commit", CommitCreateHandler, dict(repo=repo)),
+        (r"/api/diff", GitDiffHandler, dict(repo=repo)),
         (r"/api/health", HealthHandler),
     ]
 
@@ -229,6 +228,43 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
         routes.append((r"/(.*)", tornado.web.StaticFileHandler, {"path": str(dist_dir), "default_filename": "index.html"}))
 
     return tornado.web.Application(routes, default_handler_class=HealthHandler)
+
+
+class GitDiffHandler(tornado.web.RequestHandler):
+    """Return diffs for staged/unstaged files or entire section using git CLI for accuracy."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:
+        self.repo = repo
+
+    async def get(self) -> None:
+        scope = self.get_argument("scope", None)
+        path = self.get_argument("path", None)
+
+        if scope not in ("staged", "unstaged"):
+            raise tornado.web.HTTPError(400, reason="scope must be 'staged' or 'unstaged'")
+
+        # map scope to git diff flags
+        git_args = ["git", "diff"]
+        if scope == "staged":
+            git_args = ["git", "diff", "--cached"]
+
+        if path:
+            git_args += ["--", path]
+
+        repo_dir = None
+        try:
+            repo_dir = self.repo.workdir or os.getcwd()
+        except Exception:
+            repo_dir = os.getcwd()
+
+        try:
+            proc = subprocess.run(git_args, cwd=repo_dir, capture_output=True, check=False)
+            patch = proc.stdout.decode("utf-8", errors="replace")
+        except Exception as exc:
+            raise tornado.web.HTTPError(500, reason=str(exc))
+
+        self.set_header("Content-Type", "application/json")
+        self.write({"patch": patch})
 
 
 # API endpoint documentation:

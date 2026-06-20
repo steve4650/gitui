@@ -1,3 +1,4 @@
+import shutil
 import signal
 import subprocess
 import sys
@@ -13,8 +14,17 @@ def fmt():
     """Format and lint this repo."""
     run("bun i")
     run("bun run oxfmt")
-    run("uv run ruff format")
-    run("uv run ruff check --fix --unsafe-fixes")
+    # Prefer running ruff via the project's `uv` runner when available,
+    # otherwise try the `ruff` CLI, then fall back to `python -m ruff`.
+    if shutil.which("uv"):
+        ruff_runner = "uv run ruff"
+    elif shutil.which("ruff"):
+        ruff_runner = "ruff"
+    else:
+        ruff_runner = f"{sys.executable} -m ruff"
+
+    run(f"{ruff_runner} format")
+    run(f"{ruff_runner} check --fix --unsafe-fixes")
 
 
 def dev():

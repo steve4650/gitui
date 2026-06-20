@@ -9,4 +9,14 @@ export default defineConfig({
     emptyOutDir: true,
     outDir: "../dist",
   },
+  server: {
+    proxy: {
+      // Forward API requests to the backend Tornado server during development
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });
