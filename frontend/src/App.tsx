@@ -58,7 +58,6 @@ function App() {
 
   useEffect(() => {
     document.body.classList.toggle("light", theme === "light");
-    document.body.classList.toggle("win95", theme === "dark");
     try {
       localStorage.setItem("theme", theme);
     } catch (e) {
