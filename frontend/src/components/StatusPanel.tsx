@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import CommitDialog from "./CommitDialog";
 
 type Props = {
   onRefresh: () => void;
@@ -10,6 +11,7 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
   const [unstaged, setUnstaged] = useState<{ path: string; type: string }[]>([]);
   const [branch, setBranch] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showCommitDialog, setShowCommitDialog] = useState(false);
 
   async function loadStatus() {
     setError(null);
@@ -77,8 +79,11 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
 
   async function commitStaged() {
     if (!staged.length) return;
-    const message = window.prompt("Commit message", "");
-    if (!message) return;
+    setShowCommitDialog(true);
+  }
+
+  async function handleCommit(message: string) {
+    setShowCommitDialog(false);
     const res = await fetch("/api/commit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -108,6 +113,11 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
 
   return (
     <div>
+      <CommitDialog
+        open={showCommitDialog}
+        onClose={() => setShowCommitDialog(false)}
+        onSubmit={handleCommit}
+      />
       <div style={{ padding: "6px 8px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <strong>branch: {branch ?? "-"}</strong>

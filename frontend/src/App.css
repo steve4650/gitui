@@ -286,6 +286,116 @@ strong {
   font-size: 11px;
 }
 
+/* Win95 dialog */
+.win95-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.win95-dialog {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: 1px 1px 0 0 #000000;
+  min-width: 320px;
+  max-width: 480px;
+}
+
+.win95-titlebar {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 3px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.win95-title {
+  font-family: "Courier New", "MS Sans Serif", monospace;
+  font-size: 11px;
+}
+
+.win95-close {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  color: #000000;
+  font-size: 10px;
+  line-height: 1;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.win95-close:active {
+  border-color: #808080 #ffffff #ffffff #808080;
+}
+
+.win95-body {
+  padding: 12px;
+}
+
+.win95-label {
+  display: block;
+  font-family: "Courier New", "MS Sans Serif", monospace;
+  font-size: 11px;
+  margin-bottom: 6px;
+  color: #000000;
+}
+
+.win95-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  font-family: "Courier New", "MS Sans Serif", monospace;
+  font-size: 11px;
+  padding: 4px;
+  resize: vertical;
+  outline: none;
+}
+
+.win95-textarea:focus {
+  border-color: #000080 #c0c0c0 #c0c0c0 #000080;
+}
+
+.win95-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.win95-ok,
+.win95-cancel {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  color: #000000;
+  font-family: "Courier New", "MS Sans Serif", monospace;
+  font-size: 11px;
+  padding: 2px 16px;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.win95-ok:active,
+.win95-cancel:active {
+  border-color: #808080 #ffffff #ffffff #808080;
+}
+
 @media (max-width: 960px) {
   #app {
     grid-template-columns: 1fr;
