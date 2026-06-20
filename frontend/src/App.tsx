@@ -58,7 +58,7 @@ function App() {
 
   useEffect(() => {
     document.body.classList.toggle("light", theme === "light");
-    document.body.classList.toggle("win95", theme === "win95");
+    document.body.classList.toggle("win95", theme === "dark");
     try {
       localStorage.setItem("theme", theme);
     } catch (e) {
@@ -67,7 +67,7 @@ function App() {
   }, [theme]);
 
   function toggleTheme() {
-    setTheme((t) => (t === "light" ? "dark" : t === "dark" ? "win95" : "light"));
+    setTheme((t) => (t === "light" ? "dark" : "light"));
   }
 
   useEffect(() => {
@@ -102,7 +102,7 @@ function App() {
         <div className="toolbar">
           <div />
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-            {theme === "light" ? "☀️" : theme === "win95" ? "🖥️" : "🌙"}
+            {theme === "light" ? "☀️" : "🌙"}
           </button>
         </div>
         <StatusPanel
