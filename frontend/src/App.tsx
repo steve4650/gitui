@@ -26,7 +26,7 @@ function App() {
   const [theme, setTheme] = useState<string>(() => {
     try {
       return localStorage.getItem("theme") || "dark";
-    } catch  {
+    } catch {
       return "dark";
     }
   });
@@ -60,7 +60,7 @@ function App() {
     document.body.classList.toggle("light", theme === "light");
     try {
       localStorage.setItem("theme", theme);
-    } catch  {
+    } catch {
       /* ignore */
     }
   }, [theme]);
@@ -116,7 +116,7 @@ function App() {
                   setCommits(body.commits ?? []);
                   setCurrentBranch(body.current_branch ?? null);
                 }
-              } catch  {}
+              } catch {}
               setLoadingCommits(false);
             })();
           }}

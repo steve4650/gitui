@@ -149,7 +149,7 @@ class StageHandler(tornado.web.RequestHandler):
                 else:
                     index.remove(path)
             except Exception:
-                raise tornado.web.HTTPError(500, reason="Failed to add to index")
+                raise tornado.web.HTTPError(500, reason="Failed to add to index") from None
         else:
             # Unstage: remove from index but avoid deleting working-tree file.
             workdir_path = None
@@ -168,13 +168,13 @@ class StageHandler(tornado.web.RequestHandler):
             try:
                 index.remove(path)
             except Exception:
-                raise tornado.web.HTTPError(500, reason="Failed to remove from index")
+                raise tornado.web.HTTPError(500, reason="Failed to remove from index") from None
 
             # write index and ensure working-tree file wasn't accidentally removed
             try:
                 index.write()
             except Exception:
-                raise tornado.web.HTTPError(500, reason="Failed to write index")
+                raise tornado.web.HTTPError(500, reason="Failed to write index") from None
 
             try:
                 if workdir_path and file_bytes is not None and not os.path.exists(workdir_path):
@@ -193,7 +193,7 @@ class StageHandler(tornado.web.RequestHandler):
         try:
             index.write()
         except Exception:
-            raise tornado.web.HTTPError(500, reason="Failed to write index")
+            raise tornado.web.HTTPError(500, reason="Failed to write index") from None
 
         self.write({"status": "ok"})
         self.write({"status": "ok"})
@@ -218,9 +218,9 @@ class StageAllHandler(tornado.web.RequestHandler):
             else:
                 subprocess.run(["git", "reset"], cwd=repo_dir, check=True, capture_output=True)
         except subprocess.CalledProcessError as exc:
-            raise tornado.web.HTTPError(500, reason=exc.stderr.decode(errors="replace"))
+            raise tornado.web.HTTPError(500, reason=exc.stderr.decode(errors="replace")) from exc
         except Exception as exc:
-            raise tornado.web.HTTPError(500, reason=str(exc))
+            raise tornado.web.HTTPError(500, reason=str(exc)) from exc
 
         self.write({"status": "ok"})
 
@@ -249,7 +249,7 @@ class CommitCreateHandler(tornado.web.RequestHandler):
         try:
             commit_id = self.repo.create_commit("HEAD", author, committer, message, tree, parents)
         except Exception as exc:
-            raise tornado.web.HTTPError(500, reason=str(exc))
+            raise tornado.web.HTTPError(500, reason=str(exc)) from exc
 
         commit = self.repo[commit_id]
         response = format_commit(commit)
@@ -288,7 +288,7 @@ class DiscardHandler(tornado.web.RequestHandler):
             try:
                 os.remove(full_path)
             except Exception as exc:
-                raise tornado.web.HTTPError(500, reason=str(exc))
+                raise tornado.web.HTTPError(500, reason=str(exc)) from exc
             self.write({"status": "ok"})
             return
 
@@ -356,7 +356,7 @@ class GitDiffHandler(tornado.web.RequestHandler):
             proc = subprocess.run(git_args, cwd=repo_dir, capture_output=True, check=False)
             patch = proc.stdout.decode("utf-8", errors="replace")
         except Exception as exc:
-            raise tornado.web.HTTPError(500, reason=str(exc))
+            raise tornado.web.HTTPError(500, reason=str(exc)) from exc
 
         self.set_header("Content-Type", "application/json")
         self.write({"patch": patch})
