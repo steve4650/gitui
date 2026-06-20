@@ -1,4 +1,3 @@
-import shutil
 import signal
 import subprocess
 import sys
@@ -11,11 +10,26 @@ def build():
 
 
 def fmt():
-    """Format and lint this repo."""
+    """Format and fix this repo."""
     run("bun i")
     run("bun run oxfmt")
+    run("bun run oxlint --fix --fix-dangerously")
     run("uv run ruff format")
     run("uv run ruff check --fix --unsafe-fixes")
+
+
+def lint():
+    """Lint this repo."""
+    run("bun i")
+    run("bun run oxfmt --check")
+    run("bun run oxlint")
+    run("uv run ruff format --check")
+    run("uv run ruff check")
+
+
+def test():
+    """Run tests."""
+    run("uv run pytest tests.py")
 
 
 def dev():
