@@ -189,6 +189,32 @@ class StageHandler(tornado.web.RequestHandler):
         self.write({"status": "ok"})
 
 
+class StageAllHandler(tornado.web.RequestHandler):
+    """API endpoint to stage or unstage all files at once."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:
+        self.repo = repo
+
+    async def post(self) -> None:
+        data = tornado.escape.json_decode(self.request.body)
+        action = data.get("action")
+        if action not in ("add", "remove"):
+            raise tornado.web.HTTPError(400, reason="Invalid action")
+
+        repo_dir = self.repo.workdir or os.getcwd()
+        try:
+            if action == "add":
+                subprocess.run(["git", "add", "-A"], cwd=repo_dir, check=True, capture_output=True)
+            else:
+                subprocess.run(["git", "reset"], cwd=repo_dir, check=True, capture_output=True)
+        except subprocess.CalledProcessError as exc:
+            raise tornado.web.HTTPError(500, reason=exc.stderr.decode(errors="replace"))
+        except Exception as exc:
+            raise tornado.web.HTTPError(500, reason=str(exc))
+
+        self.write({"status": "ok"})
+
+
 class CommitCreateHandler(tornado.web.RequestHandler):
     """API endpoint to create a commit from the current index."""
 
@@ -276,6 +302,7 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
         (r"/api/commit/([0-9a-fA-F]+)", CommitDiffHandler, dict(repo=repo)),
         (r"/api/status", StatusHandler, dict(repo=repo)),
         (r"/api/stage", StageHandler, dict(repo=repo)),
+        (r"/api/stage-all", StageAllHandler, dict(repo=repo)),
         (r"/api/commit", CommitCreateHandler, dict(repo=repo)),
         (r"/api/discard", DiscardHandler, dict(repo=repo)),
         (r"/api/diff", GitDiffHandler, dict(repo=repo)),

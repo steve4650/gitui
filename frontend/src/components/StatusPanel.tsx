@@ -55,6 +55,26 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
     onRefresh();
   }
 
+  async function stageAll() {
+    await fetch("/api/stage-all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "add" }),
+    });
+    await loadStatus();
+    onRefresh();
+  }
+
+  async function unstageAll() {
+    await fetch("/api/stage-all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "remove" }),
+    });
+    await loadStatus();
+    onRefresh();
+  }
+
   async function commitStaged() {
     if (!staged.length) return;
     const message = window.prompt("Commit message", "");
@@ -106,12 +126,15 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
       {/* Unstaged first: compact list items */}
       {unstaged.length > 0 && (
         <div>
-          <h2
-            style={{ margin: "6px 8px", cursor: "pointer" }}
-            onClick={() => showFileDiff("unstaged")}
-          >
-            Unstaged Changes
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", margin: "4px 6px", gap: 4 }}>
+            <h2
+              style={{ margin: 0, cursor: "pointer" }}
+              onClick={() => showFileDiff("unstaged")}
+            >
+              Unstaged Changes
+            </h2>
+            <button onClick={stageAll} title="Stage all changes">Stage All</button>
+          </div>
           <ul className="file-list">
             {unstaged.map((f) => (
               <li key={f.path} className="file-item">
@@ -134,12 +157,15 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
       {/* Staged next: look like pseudo-commits */}
       {staged.length > 0 && (
         <div>
-          <h2
-            style={{ margin: "6px 8px", cursor: "pointer" }}
-            onClick={() => showFileDiff("staged")}
-          >
-            Staged
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", margin: "4px 6px", gap: 4 }}>
+            <h2
+              style={{ margin: 0, cursor: "pointer" }}
+              onClick={() => showFileDiff("staged")}
+            >
+              Staged
+            </h2>
+            <button onClick={unstageAll} title="Unstage all changes">Unstage All</button>
+          </div>
           <ul className="file-list">
             {staged.map((f) => (
               <li key={f.path} className="file-item staged">

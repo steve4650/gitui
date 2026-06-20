@@ -39,7 +39,7 @@ def dev():
     procs = [
         subprocess.Popen("caddy run", shell=True),
         subprocess.Popen("bun run --cwd frontend dev", shell=True),
-        subprocess.Popen(f"{sys.executable} main.py", shell=True),
+        subprocess.Popen("uv run server.py", shell=True),
     ]
 
     def cleanup(signum, frame):
