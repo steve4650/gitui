@@ -79,6 +79,131 @@ class CommitDiffHandler(tornado.web.RequestHandler):
         self.write(response)
 
 
+class StatusHandler(tornado.web.RequestHandler):
+    """API endpoint returning staged and unstaged file lists and current branch."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:
+        self.repo = repo
+
+    async def get(self) -> None:
+        if self.repo.head_is_unborn:
+            branch = None
+        else:
+            branch = self.repo.head.shorthand
+
+        statuses = self.repo.status()
+        staged = []
+        unstaged = []
+        for path, flag in statuses.items():
+            # index flags indicate staged changes
+            if flag & (pygit2.GIT_STATUS_INDEX_NEW | pygit2.GIT_STATUS_INDEX_MODIFIED | pygit2.GIT_STATUS_INDEX_DELETED | pygit2.GIT_STATUS_INDEX_RENAMED | pygit2.GIT_STATUS_INDEX_TYPECHANGE):
+                staged.append(path)
+            # worktree flags indicate unstaged changes
+            if flag & (pygit2.GIT_STATUS_WT_MODIFIED | pygit2.GIT_STATUS_WT_DELETED | pygit2.GIT_STATUS_WT_NEW | pygit2.GIT_STATUS_WT_RENAMED | pygit2.GIT_STATUS_WT_TYPECHANGE):
+                unstaged.append(path)
+
+        self.write({"current_branch": branch, "staged": staged, "unstaged": unstaged})
+
+
+class StageHandler(tornado.web.RequestHandler):
+    """API endpoint to stage/unstage files."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:
+        self.repo = repo
+
+    async def post(self) -> None:
+        data = tornado.escape.json_decode(self.request.body)
+        path = data.get("path")
+        action = data.get("action")
+        if not path or action not in ("add", "remove"):
+            raise tornado.web.HTTPError(400, reason="Invalid payload")
+
+        index = self.repo.index
+        if action == "add":
+            try:
+                index.add(path)
+            except Exception:
+                raise tornado.web.HTTPError(500, reason="Failed to add to index")
+        else:
+            # Unstage: remove from index but avoid deleting working-tree file.
+            workdir_path = None
+            file_bytes = None
+            try:
+                repo_workdir = self.repo.workdir
+                if repo_workdir:
+                    workdir_path = os.path.join(repo_workdir, path)
+                    if os.path.exists(workdir_path):
+                        with open(workdir_path, "rb") as f:
+                            file_bytes = f.read()
+            except Exception:
+                # ignore reading failures, proceed to remove from index
+                file_bytes = None
+
+            try:
+                index.remove(path)
+            except Exception:
+                raise tornado.web.HTTPError(500, reason="Failed to remove from index")
+
+            # write index and ensure working-tree file wasn't accidentally removed
+            try:
+                index.write()
+            except Exception:
+                raise tornado.web.HTTPError(500, reason="Failed to write index")
+
+            try:
+                if workdir_path and file_bytes is not None and not os.path.exists(workdir_path):
+                    # restore file contents to avoid deletion
+                    with open(workdir_path, "wb") as f:
+                        f.write(file_bytes)
+            except Exception:
+                # non-fatal; continue
+                pass
+
+            # exit early because we've already written the index
+            self.write({"status": "ok"})
+            return
+
+        # write index for add case
+        try:
+            index.write()
+        except Exception:
+            raise tornado.web.HTTPError(500, reason="Failed to write index")
+
+        self.write({"status": "ok"})
+        self.write({"status": "ok"})
+
+
+class CommitCreateHandler(tornado.web.RequestHandler):
+    """API endpoint to create a commit from the current index."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:
+        self.repo = repo
+
+    async def post(self) -> None:
+        data = tornado.escape.json_decode(self.request.body)
+        message = data.get("message")
+        if not message:
+            raise tornado.web.HTTPError(400, reason="Missing commit message")
+
+        author = pygit2.Signature("gitui", "gitui@example.com")
+        committer = author
+        index = self.repo.index
+        index.write()
+        tree = index.write_tree()
+        parents = []
+        if not self.repo.is_empty:
+            parents = [self.repo.head.target]
+
+        try:
+            commit_id = self.repo.create_commit("HEAD", author, committer, message, tree, parents)
+        except Exception as exc:
+            raise tornado.web.HTTPError(500, reason=str(exc))
+
+        commit = self.repo[commit_id]
+        response = format_commit(commit)
+        self.write(response)
+
+
 class HealthHandler(tornado.web.RequestHandler):
     """Simple health-check endpoint."""
 
@@ -94,6 +219,9 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
     routes = [
         (r"/api/commits", CommitListHandler, dict(repo=repo)),
         (r"/api/commit/([0-9a-fA-F]+)", CommitDiffHandler, dict(repo=repo)),
+        (r"/api/status", StatusHandler, dict(repo=repo)),
+        (r"/api/stage", StageHandler, dict(repo=repo)),
+        (r"/api/commit", CommitCreateHandler, dict(repo=repo)),
         (r"/api/health", HealthHandler),
     ]
 

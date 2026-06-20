@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import StatusPanel from "./components/StatusPanel";
 
 type Commit = {
   sha: string;
@@ -103,6 +104,20 @@ function App() {
             {theme === "light" ? "🌞" : "🌙"}
           </button>
         </div>
+        <StatusPanel onRefresh={() => { /* refresh commits after status change */
+          (async () => {
+            setLoadingCommits(true);
+            try {
+              const res = await fetch('/api/commits');
+              if (res.ok) {
+                const body = await res.json();
+                setCommits(body.commits ?? []);
+                setCurrentBranch(body.current_branch ?? null);
+              }
+            } catch (_) {}
+            setLoadingCommits(false);
+          })();
+        }} />
         <h1>Commit history</h1>
         {loadingCommits && <p className="loading">Loading commits...</p>}
         {error && <p className="loading">{error}</p>}

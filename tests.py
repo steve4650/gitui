@@ -93,6 +93,39 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         response = self.fetch("/api/commit/0000000000000000000000000000000000000000")
         self.assertEqual(response.code, 404)
 
+    def test_status_stage_and_commit_endpoints(self):
+        # create an unstaged file
+        self._write_file("new.txt", "hello world\n")
+
+        # check status shows unstaged
+        response = self.fetch("/api/status")
+        self.assertEqual(response.code, 200)
+        payload = json.loads(response.body)
+        self.assertIn("unstaged", payload)
+        self.assertIn("new.txt", payload["unstaged"])
+
+        # stage the file
+        resp = self.fetch(self.get_url("/api/stage"), method="POST", headers={"Content-Type": "application/json"}, body=json.dumps({"path": "new.txt", "action": "add"}))
+        self.assertEqual(resp.code, 200)
+
+        # status should now show it as staged
+        response = self.fetch("/api/status")
+        self.assertEqual(response.code, 200)
+        payload = json.loads(response.body)
+        self.assertIn("new.txt", payload["staged"])
+
+        # commit via API
+        resp = self.fetch(self.get_url("/api/commit"), method="POST", headers={"Content-Type": "application/json"}, body=json.dumps({"message": "Add new.txt"}))
+        self.assertEqual(resp.code, 200)
+        body = json.loads(resp.body)
+        self.assertEqual(body["message"], "Add new.txt")
+
+        # status should be clean now
+        response = self.fetch("/api/status")
+        payload = json.loads(response.body)
+        self.assertNotIn("new.txt", payload.get("staged", []))
+        self.assertNotIn("new.txt", payload.get("unstaged", []))
+
 
 if __name__ == "__main__":
     tornado.testing.main()
