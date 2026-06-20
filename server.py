@@ -82,17 +82,27 @@ class CommitDiffHandler(tornado.web.RequestHandler):
 
 def _status_type(flag: int, staged: bool = False) -> str:
     if staged:
-        if flag & pygit2.GIT_STATUS_INDEX_NEW: return "added"
-        if flag & pygit2.GIT_STATUS_INDEX_DELETED: return "deleted"
-        if flag & pygit2.GIT_STATUS_INDEX_RENAMED: return "renamed"
-        if flag & pygit2.GIT_STATUS_INDEX_TYPECHANGE: return "typechange"
-        if flag & pygit2.GIT_STATUS_INDEX_MODIFIED: return "modified"
+        if flag & pygit2.GIT_STATUS_INDEX_NEW:
+            return "added"
+        if flag & pygit2.GIT_STATUS_INDEX_DELETED:
+            return "deleted"
+        if flag & pygit2.GIT_STATUS_INDEX_RENAMED:
+            return "renamed"
+        if flag & pygit2.GIT_STATUS_INDEX_TYPECHANGE:
+            return "typechange"
+        if flag & pygit2.GIT_STATUS_INDEX_MODIFIED:
+            return "modified"
     else:
-        if flag & pygit2.GIT_STATUS_WT_NEW: return "added"
-        if flag & pygit2.GIT_STATUS_WT_DELETED: return "deleted"
-        if flag & pygit2.GIT_STATUS_WT_RENAMED: return "renamed"
-        if flag & pygit2.GIT_STATUS_WT_TYPECHANGE: return "typechange"
-        if flag & pygit2.GIT_STATUS_WT_MODIFIED: return "modified"
+        if flag & pygit2.GIT_STATUS_WT_NEW:
+            return "added"
+        if flag & pygit2.GIT_STATUS_WT_DELETED:
+            return "deleted"
+        if flag & pygit2.GIT_STATUS_WT_RENAMED:
+            return "renamed"
+        if flag & pygit2.GIT_STATUS_WT_TYPECHANGE:
+            return "typechange"
+        if flag & pygit2.GIT_STATUS_WT_MODIFIED:
+            return "modified"
     return "unknown"
 
 

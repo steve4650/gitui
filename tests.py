@@ -135,7 +135,6 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         self.assertNotIn("new.txt", self._staged_paths(payload))
         self.assertNotIn("new.txt", self._unstaged_paths(payload))
 
-
     def test_discard_tracked_file_restores_content(self):
         # create and commit a tracked file
         self._write_file("tracked.txt", "original content\n")
@@ -233,7 +232,6 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         payload = json.loads(response.body)
         self.assertNotIn("to_delete.txt", self._unstaged_paths(payload))
         self.assertIn("to_delete.txt", self._staged_paths(payload))
-
 
     def test_stage_all_and_unstage_all(self):
         # create two untracked files

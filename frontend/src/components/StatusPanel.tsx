@@ -127,13 +127,12 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
       {unstaged.length > 0 && (
         <div>
           <div style={{ display: "flex", alignItems: "center", margin: "4px 6px", gap: 4 }}>
-            <h2
-              style={{ margin: 0, cursor: "pointer" }}
-              onClick={() => showFileDiff("unstaged")}
-            >
+            <h2 style={{ margin: 0, cursor: "pointer" }} onClick={() => showFileDiff("unstaged")}>
               Unstaged Changes
             </h2>
-            <button onClick={stageAll} title="Stage all changes">Stage All</button>
+            <button onClick={stageAll} title="Stage all changes">
+              Stage All
+            </button>
           </div>
           <ul className="file-list">
             {unstaged.map((f) => (
@@ -158,13 +157,12 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
       {staged.length > 0 && (
         <div>
           <div style={{ display: "flex", alignItems: "center", margin: "4px 6px", gap: 4 }}>
-            <h2
-              style={{ margin: 0, cursor: "pointer" }}
-              onClick={() => showFileDiff("staged")}
-            >
+            <h2 style={{ margin: 0, cursor: "pointer" }} onClick={() => showFileDiff("staged")}>
               Staged
             </h2>
-            <button onClick={unstageAll} title="Unstage all changes">Unstage All</button>
+            <button onClick={unstageAll} title="Unstage all changes">
+              Unstage All
+            </button>
           </div>
           <ul className="file-list">
             {staged.map((f) => (
