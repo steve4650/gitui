@@ -61,6 +61,29 @@ body.light .commit-button.selected {
   background: #eef6ff;
 }
 
+body.light .file-item:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+body.light .file-item.staged {
+  background: #ffffff;
+  border-color: #e6edf3;
+}
+
+body.light .file-item.staged:hover {
+  background: #eef6ff;
+  border-color: #2563eb;
+}
+
+body.light .file-label {
+  color: #374151;
+}
+
+body.light .file-label:hover {
+  color: #000000;
+}
+
 body.light .commit-diff {
   background: #ffffff;
   color: #0b1220;
@@ -95,7 +118,7 @@ body.light .commit-diff {
   border-radius: 0; /* flush edges */
   background: #070707;
   color: inherit;
-  padding: 6px 8px;
+  padding: 4px 6px;
   cursor: pointer;
   transition:
     background 0.12s,
@@ -107,6 +130,51 @@ body.light .commit-diff {
 .commit-button.selected {
   border-color: #3b82f6;
   background: #0b0b0b;
+}
+
+/* ========== file list items (unstaged / staged) ========== */
+.file-list {
+  list-style: none;
+  padding: 4px 10px;
+  margin: 0;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 4px;
+  margin: 1px 0;
+  font-size: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.file-item:hover {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.file-item.staged {
+  border: 1px solid #111111;
+  background: #070707;
+}
+
+.file-item.staged:hover {
+  background: #0b0b0b;
+  border-color: #3b82f6;
+}
+
+.file-label {
+  cursor: pointer;
+  color: #cbd5e1;
+  flex: 1;
+  padding: 1px 2px;
+}
+
+.file-label:hover {
+  color: #ffffff;
 }
 
 .commit-message {
@@ -177,6 +245,160 @@ h2 {
 
 .loading {
   color: #cbd5e1;
+}
+
+/* =============================================
+   WIN95 THEME
+   ============================================= */
+body.win95 {
+  background: #008080;
+  color: #000000;
+}
+
+body.win95 .sidebar {
+  background: #c0c0c0;
+  border-right: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  padding: 2px;
+  gap: 2px;
+}
+
+body.win95 .commit-button {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  color: #000000;
+  padding: 2px 4px;
+  font-family: 'Courier New', 'MS Sans Serif', monospace;
+  font-size: 11px;
+  transition: none;
+}
+
+body.win95 .commit-button:hover,
+body.win95 .commit-button.selected {
+  background: #000080;
+  color: #ffffff;
+}
+
+body.win95 .commit-message {
+  font-weight: 400;
+  font-size: 11px;
+  margin: 0;
+}
+
+body.win95 .commit-meta {
+  color: #000000;
+  font-size: 10px;
+}
+
+body.win95 .commit-button:hover .commit-meta,
+body.win95 .commit-button.selected .commit-meta {
+  color: #ffffff;
+}
+
+body.win95 .file-list {
+  list-style: none;
+  padding: 2px 6px;
+  margin: 0;
+}
+
+body.win95 .file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  padding: 1px 3px;
+  margin: 1px 0;
+  font-size: 11px;
+  font-family: 'Courier New', 'MS Sans Serif', monospace;
+  transition: none;
+}
+
+body.win95 .file-item:hover {
+  border-color: #808080 #ffffff #ffffff #808080;
+}
+
+body.win95 .file-label {
+  cursor: pointer;
+  color: #000000;
+  flex: 1;
+  padding: 1px 2px;
+}
+
+body.win95 .file-item:hover .file-label {
+  background: #000080;
+  color: #ffffff;
+}
+
+body.win95 h2 {
+  color: #000000;
+  font-family: 'Courier New', 'MS Sans Serif', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  margin: 4px 6px;
+}
+
+body.win95 button {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  color: #000000;
+  padding: 1px 6px;
+  font-family: 'Courier New', 'MS Sans Serif', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 0;
+  outline: none;
+}
+
+body.win95 button:active {
+  border-color: #808080 #ffffff #ffffff #808080;
+}
+
+body.win95 .theme-toggle {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  padding: 1px 4px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Courier New', 'MS Sans Serif', monospace;
+}
+
+body.win95 .commit-diff {
+  background: #ffffff;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  color: #000000;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  border-radius: 0;
+  padding: 6px 8px;
+  margin-top: 8px;
+}
+
+body.win95 .diff-line.added {
+  color: #008000;
+  background-color: transparent;
+}
+
+body.win95 .diff-line.removed {
+  color: #800000;
+  background-color: transparent;
+}
+
+body.win95 .diff-line.hunk {
+  color: #000080;
+  font-weight: 700;
+}
+
+body.win95 .loading {
+  color: #000000;
+}
+
+body.win95 strong {
+  color: #000000;
 }
 
 @media (max-width: 960px) {

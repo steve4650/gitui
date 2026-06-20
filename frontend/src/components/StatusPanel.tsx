@@ -105,29 +105,15 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
           >
             Unstaged Changes
           </h2>
-          <ul style={{ listStyle: "none", padding: "6px 12px", margin: 0 }}>
+          <ul className="file-list">
             {unstaged.map((p) => (
-              <li
-                key={p}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "4px 0",
-                  fontSize: "0.78rem",
-                }}
-              >
-                <div
-                  style={{ color: "#cbd5e1", cursor: "pointer" }}
-                  onClick={() => showFileDiff("unstaged", p)}
-                >
+              <li key={p} className="file-item">
+                <span className="file-label" onClick={() => showFileDiff("unstaged", p)}>
                   {p}
-                </div>
-                <div>
-                  <button onClick={() => toggleStage(p, "add")} style={{ marginLeft: 8 }}>
-                    Stage
-                  </button>
-                </div>
+                </span>
+                <button onClick={() => toggleStage(p, "add")}>
+                  Stage
+                </button>
               </li>
             ))}
           </ul>
@@ -144,20 +130,14 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
             Staged
           </h2>
           {staged.map((p) => (
-            <div
-              key={p}
-              className="commit-button"
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-            >
-              <div onClick={() => showFileDiff("staged", p)} style={{ cursor: "pointer" }}>
+            <div key={p} className="file-item staged">
+              <div className="file-label" onClick={() => showFileDiff("staged", p)}>
                 <p className="commit-message">{p}</p>
                 <p className="commit-meta">staged</p>
               </div>
-              <div>
-                <button onClick={() => toggleStage(p, "remove")} style={{ marginLeft: 8 }}>
-                  Unstage
-                </button>
-              </div>
+              <button onClick={() => toggleStage(p, "remove")}>
+                Unstage
+              </button>
             </div>
           ))}
         </div>
