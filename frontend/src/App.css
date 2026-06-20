@@ -209,6 +209,10 @@ button:active {
   color: #ffffff;
 }
 
+.main .commit-meta {
+  color: #ffffff;
+}
+
 .main h1 {
   margin-top: 0;
   font-size: 1.2rem;
