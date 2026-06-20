@@ -1,0 +1,31 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - release
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: testing and linting this branch
+    steps:
+      - name: check out this repo
+        uses: actions/checkout@v6
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - name: setup bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: lint frontend code
+        run: |
+          bun i
+          bun run oxfmt --check
+          bun run oxlint
+      - name: lint python code
+        run: |
+          uv run ruff format --check
+          uv run ruff check
+      - name: check for TODOs
+        run: |
+          git ls-files | xargs grep -Ii todo | wc -l | uv run python3 -c "import sys; sys.exit(0 if sys.stdin.read().strip() == '0' else 1)"
