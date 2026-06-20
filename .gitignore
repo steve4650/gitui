@@ -9,3 +9,4 @@ ansible/roles/andromeda/files/*
 .secrets.json
 secrets.json
 .pytest_cache
+.pytest_cache
