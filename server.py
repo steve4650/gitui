@@ -57,8 +57,8 @@ class CommitDiffHandler(tornado.web.RequestHandler):
     def get(self, sha: str) -> None:
         try:
             commit = self.repo[sha]
-        except KeyError:
-            raise tornado.web.HTTPError(404, reason="Commit not found")
+        except KeyError as err:
+            raise tornado.web.HTTPError(404, reason="Commit not found") from err
 
         if not isinstance(commit, pygit2.Commit):
             raise tornado.web.HTTPError(404, reason="Object is not a commit")
