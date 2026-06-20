@@ -129,7 +129,21 @@ function App() {
                 {diff.author_name} · {new Date(diff.commit_time).toLocaleString()}
               </p>
             </div>
-            <pre className="commit-diff">{diff.patch}</pre>
+            <div className="commit-diff" aria-live="polite">
+              {diff.patch.split("\n").map((line, idx) => {
+                const isAdded = line.startsWith("+");
+                const isRemoved = line.startsWith("-");
+                const isHunk = line.startsWith("@@");
+                const className = isAdded ? "diff-line added" : isRemoved ? "diff-line removed" : isHunk ? "diff-line hunk" : "diff-line";
+                // keep empty lines visible
+                const content = line === "" ? "\u00A0" : line;
+                return (
+                  <div key={idx} className={className}>
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
           !loadingDiff && <p className="loading">Select a commit to view its diff.</p>

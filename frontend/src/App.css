@@ -8,8 +8,8 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: #0b1220;
-  color: #e2e8f0;
+  background: #000000; /* darker black */
+  color: #e6eef6;
 }
 
 /* remove default browser body margin so sidebar can sit flush left */
@@ -74,8 +74,8 @@ body.light .commit-diff {
 }
 
 .sidebar {
-  background: #111827;
-  border-right: 1px solid #1f2937;
+  background: #070707; /* near black */
+  border-right: 1px solid #111111;
   padding: 0 6px 6px 0; /* flush to left edge */
   display: flex;
   flex-direction: column;
@@ -91,9 +91,9 @@ body.light .commit-diff {
 .commit-button {
   width: 100%;
   text-align: left;
-  border: 1px solid #334155;
+  border: 1px solid #111111;
   border-radius: 0; /* flush edges */
-  background: #0f172a;
+  background: #070707;
   color: inherit;
   padding: 6px 8px;
   cursor: pointer;
@@ -105,8 +105,8 @@ body.light .commit-diff {
 
 .commit-button:hover,
 .commit-button.selected {
-  border-color: #2563eb;
-  background: #111827;
+  border-color: #3b82f6;
+  background: #0b0b0b;
 }
 
 .commit-message {
@@ -134,11 +134,10 @@ body.light .commit-diff {
 }
 
 .commit-diff {
-  white-space: pre-wrap;
-  background: #020617;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  padding: 12px 14px;
+  background: #000000;
+  border: 1px solid #111111;
+  border-radius: 8px;
+  padding: 10px 12px;
   margin-top: 12px;
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
@@ -147,6 +146,27 @@ body.light .commit-diff {
   line-height: 1.4;
   overflow-x: auto;
   text-align: left;
+  white-space: pre; /* preserve spaces */
+}
+
+.diff-line {
+  white-space: pre;
+  padding: 0 2px;
+}
+
+.diff-line.added {
+  color: #10b981; /* green */
+  background-color: rgba(16,185,129,0.02);
+}
+
+.diff-line.removed {
+  color: #ef4444; /* red */
+  background-color: rgba(239,68,68,0.02);
+}
+
+.diff-line.hunk {
+  color: #60a5fa;
+  font-weight: 600;
 }
 
 .loading {
