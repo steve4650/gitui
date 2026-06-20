@@ -61,7 +61,7 @@ def run(cmd, **kwargs):
     subprocess.run(cmd, shell=True, check=True, **kwargs)
 
 
-TASKS = {"build": build, "fmt": fmt, "dev": dev}
+TASKS = {"build": build, "fmt": fmt, "dev": dev, "lint": lint, "test": test}
 
 
 def main():

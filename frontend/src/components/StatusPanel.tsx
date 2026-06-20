@@ -123,9 +123,7 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
                   <button onClick={() => discardFile(f.path)} title="Discard changes">
                     ↩
                   </button>
-                  <button onClick={() => toggleStage(f.path, "add")}>
-                    Stage
-                  </button>
+                  <button onClick={() => toggleStage(f.path, "add")}>Stage</button>
                 </div>
               </li>
             ))}
@@ -149,9 +147,7 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
                   <span className={"change-badge " + f.type}>{f.type[0].toUpperCase()}</span>
                   {f.path}
                 </span>
-                <button onClick={() => toggleStage(f.path, "remove")}>
-                  Unstage
-                </button>
+                <button onClick={() => toggleStage(f.path, "remove")}>Unstage</button>
               </li>
             ))}
           </ul>
