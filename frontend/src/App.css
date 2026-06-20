@@ -137,6 +137,7 @@ body.light .diff-line.hunk {
 
 .file-item:hover {
   border-color: #808080 #ffffff #ffffff #808080;
+  background: #000080;
 }
 
 .file-label {
@@ -147,8 +148,12 @@ body.light .diff-line.hunk {
 }
 
 .file-item:hover .file-label {
-  background: #000080;
   color: #ffffff;
+}
+
+.file-actions {
+  display: flex;
+  gap: 2px;
 }
 
 h2 {

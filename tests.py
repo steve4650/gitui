@@ -127,5 +127,74 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         self.assertNotIn("new.txt", payload.get("unstaged", []))
 
 
+    def test_discard_tracked_file_restores_content(self):
+        # create and commit a tracked file
+        self._write_file("tracked.txt", "original content\n")
+        self.repo.index.write()
+        self._commit("Add tracked.txt")
+
+        # modify the file on disk without staging
+        file_path = self.repo_path / "tracked.txt"
+        file_path.write_text("modified content\n", encoding="utf-8")
+
+        # verify it shows as unstaged
+        response = self.fetch("/api/status")
+        payload = json.loads(response.body)
+        self.assertIn("tracked.txt", payload["unstaged"])
+
+        # discard the change
+        resp = self.fetch(
+            self.get_url("/api/discard"),
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"path": "tracked.txt"}),
+        )
+        self.assertEqual(resp.code, 200)
+
+        # status should be clean
+        response = self.fetch("/api/status")
+        payload = json.loads(response.body)
+        self.assertNotIn("tracked.txt", payload.get("unstaged", []))
+
+        # file content should be restored to HEAD version
+        self.assertEqual(file_path.read_text(encoding="utf-8"), "original content\n")
+
+    def test_discard_untracked_file_deletes_it(self):
+        # create an untracked file (write to disk without staging)
+        file_path = self.repo_path / "untracked.txt"
+        file_path.write_text("new file\n", encoding="utf-8")
+
+        # verify it shows as unstaged
+        response = self.fetch("/api/status")
+        payload = json.loads(response.body)
+        self.assertIn("untracked.txt", payload["unstaged"])
+
+        # discard (delete) the file
+        resp = self.fetch(
+            self.get_url("/api/discard"),
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"path": "untracked.txt"}),
+        )
+        self.assertEqual(resp.code, 200)
+
+        # file should be deleted from disk
+        self.assertFalse(file_path.exists())
+
+        # status should be clean
+        response = self.fetch("/api/status")
+        payload = json.loads(response.body)
+        self.assertNotIn("untracked.txt", payload.get("unstaged", []))
+
+    def test_discard_missing_path_returns_400(self):
+        resp = self.fetch(
+            self.get_url("/api/discard"),
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({}),
+        )
+        self.assertEqual(resp.code, 400)
+
+
 if __name__ == "__main__":
     tornado.testing.main()

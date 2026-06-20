@@ -202,6 +202,39 @@ class CommitCreateHandler(tornado.web.RequestHandler):
         self.write(response)
 
 
+class DiscardHandler(tornado.web.RequestHandler):
+    """API endpoint to discard (revert) unstaged changes for a file."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:
+        self.repo = repo
+
+    async def post(self) -> None:
+        data = tornado.escape.json_decode(self.request.body)
+        path = data.get("path")
+        if not path:
+            raise tornado.web.HTTPError(400, reason="Missing path")
+
+        repo_dir = self.repo.workdir or os.getcwd()
+
+        try:
+            subprocess.run(
+                ["git", "checkout", "--", path],
+                cwd=repo_dir,
+                capture_output=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            # checkout fails for untracked files; delete them instead
+            try:
+                full_path = os.path.join(repo_dir, path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+            except Exception as exc:
+                raise tornado.web.HTTPError(500, reason=str(exc))
+
+        self.write({"status": "ok"})
+
+
 class HealthHandler(tornado.web.RequestHandler):
     """Simple health-check endpoint."""
 
@@ -220,6 +253,7 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
         (r"/api/status", StatusHandler, dict(repo=repo)),
         (r"/api/stage", StageHandler, dict(repo=repo)),
         (r"/api/commit", CommitCreateHandler, dict(repo=repo)),
+        (r"/api/discard", DiscardHandler, dict(repo=repo)),
         (r"/api/diff", GitDiffHandler, dict(repo=repo)),
         (r"/api/health", HealthHandler),
     ]

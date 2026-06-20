@@ -31,6 +31,8 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
 
   useEffect(() => {
     loadStatus();
+    const interval = setInterval(loadStatus, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   async function toggleStage(path: string, action: "add" | "remove") {
@@ -45,6 +47,16 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
     } else {
       setError(`Failed to ${action} ${path}`);
     }
+  }
+
+  async function discardFile(path: string) {
+    await fetch("/api/discard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    await loadStatus();
+    onRefresh();
   }
 
   async function commitStaged() {
@@ -111,9 +123,14 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
                 <span className="file-label" onClick={() => showFileDiff("unstaged", p)}>
                   {p}
                 </span>
-                <button onClick={() => toggleStage(p, "add")}>
-                  Stage
-                </button>
+                <div className="file-actions">
+                  <button onClick={() => discardFile(p)} title="Discard changes">
+                    ↩
+                  </button>
+                  <button onClick={() => toggleStage(p, "add")}>
+                    Stage
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
