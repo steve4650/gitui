@@ -93,6 +93,12 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         response = self.fetch("/api/commit/0000000000000000000000000000000000000000")
         self.assertEqual(response.code, 404)
 
+    def _unstaged_paths(self, payload):
+        return [x["path"] for x in payload.get("unstaged", [])]
+
+    def _staged_paths(self, payload):
+        return [x["path"] for x in payload.get("staged", [])]
+
     def test_status_stage_and_commit_endpoints(self):
         # create an unstaged file
         self._write_file("new.txt", "hello world\n")
@@ -102,7 +108,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         payload = json.loads(response.body)
         self.assertIn("unstaged", payload)
-        self.assertIn("new.txt", payload["unstaged"])
+        self.assertIn("new.txt", self._unstaged_paths(payload))
 
         # stage the file
         resp = self.fetch(self.get_url("/api/stage"), method="POST", headers={"Content-Type": "application/json"}, body=json.dumps({"path": "new.txt", "action": "add"}))
@@ -112,7 +118,10 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         response = self.fetch("/api/status")
         self.assertEqual(response.code, 200)
         payload = json.loads(response.body)
-        self.assertIn("new.txt", payload["staged"])
+        self.assertIn("new.txt", self._staged_paths(payload))
+        # verify type is correct
+        staged = [x for x in payload.get("staged", []) if x["path"] == "new.txt"]
+        self.assertEqual(staged[0]["type"], "added")
 
         # commit via API
         resp = self.fetch(self.get_url("/api/commit"), method="POST", headers={"Content-Type": "application/json"}, body=json.dumps({"message": "Add new.txt"}))
@@ -123,8 +132,8 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         # status should be clean now
         response = self.fetch("/api/status")
         payload = json.loads(response.body)
-        self.assertNotIn("new.txt", payload.get("staged", []))
-        self.assertNotIn("new.txt", payload.get("unstaged", []))
+        self.assertNotIn("new.txt", self._staged_paths(payload))
+        self.assertNotIn("new.txt", self._unstaged_paths(payload))
 
 
     def test_discard_tracked_file_restores_content(self):
@@ -140,7 +149,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         # verify it shows as unstaged
         response = self.fetch("/api/status")
         payload = json.loads(response.body)
-        self.assertIn("tracked.txt", payload["unstaged"])
+        self.assertIn("tracked.txt", self._unstaged_paths(payload))
 
         # discard the change
         resp = self.fetch(
@@ -154,7 +163,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         # status should be clean
         response = self.fetch("/api/status")
         payload = json.loads(response.body)
-        self.assertNotIn("tracked.txt", payload.get("unstaged", []))
+        self.assertNotIn("tracked.txt", self._unstaged_paths(payload))
 
         # file content should be restored to HEAD version
         self.assertEqual(file_path.read_text(encoding="utf-8"), "original content\n")
@@ -167,7 +176,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         # verify it shows as unstaged
         response = self.fetch("/api/status")
         payload = json.loads(response.body)
-        self.assertIn("untracked.txt", payload["unstaged"])
+        self.assertIn("untracked.txt", self._unstaged_paths(payload))
 
         # discard (delete) the file
         resp = self.fetch(
@@ -184,7 +193,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         # status should be clean
         response = self.fetch("/api/status")
         payload = json.loads(response.body)
-        self.assertNotIn("untracked.txt", payload.get("unstaged", []))
+        self.assertNotIn("untracked.txt", self._unstaged_paths(payload))
 
     def test_discard_missing_path_returns_400(self):
         resp = self.fetch(
@@ -208,7 +217,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         # verify it shows as unstaged
         response = self.fetch("/api/status")
         payload = json.loads(response.body)
-        self.assertIn("to_delete.txt", payload["unstaged"])
+        self.assertIn("to_delete.txt", self._unstaged_paths(payload))
 
         # stage the deletion
         resp = self.fetch(
@@ -222,8 +231,8 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         # verify it moved to staged
         response = self.fetch("/api/status")
         payload = json.loads(response.body)
-        self.assertNotIn("to_delete.txt", payload.get("unstaged", []))
-        self.assertIn("to_delete.txt", payload["staged"])
+        self.assertNotIn("to_delete.txt", self._unstaged_paths(payload))
+        self.assertIn("to_delete.txt", self._staged_paths(payload))
 
 
 if __name__ == "__main__":

@@ -6,14 +6,12 @@ type Props = {
 };
 
 export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
-  const [staged, setStaged] = useState<string[]>([]);
-  const [unstaged, setUnstaged] = useState<string[]>([]);
+  const [staged, setStaged] = useState<{ path: string; type: string }[]>([]);
+  const [unstaged, setUnstaged] = useState<{ path: string; type: string }[]>([]);
   const [branch, setBranch] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function loadStatus() {
-    setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/status");
@@ -24,8 +22,6 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
       setBranch(body.current_branch || null);
     } catch (err) {
       setError((err as Error).message);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -105,7 +101,6 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
         </div>
       </div>
 
-      {loading && <p className="loading">Loading status...</p>}
       {error && <p className="loading">{error}</p>}
 
       {/* Unstaged first: compact list items */}
@@ -118,16 +113,17 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
             Unstaged Changes
           </h2>
           <ul className="file-list">
-            {unstaged.map((p) => (
-              <li key={p} className="file-item">
-                <span className="file-label" onClick={() => showFileDiff("unstaged", p)}>
-                  {p}
+            {unstaged.map((f) => (
+              <li key={f.path} className="file-item">
+                <span className="file-label" onClick={() => showFileDiff("unstaged", f.path)}>
+                  <span className={"change-badge " + f.type}>{f.type[0].toUpperCase()}</span>
+                  {f.path}
                 </span>
                 <div className="file-actions">
-                  <button onClick={() => discardFile(p)} title="Discard changes">
+                  <button onClick={() => discardFile(f.path)} title="Discard changes">
                     ↩
                   </button>
-                  <button onClick={() => toggleStage(p, "add")}>
+                  <button onClick={() => toggleStage(f.path, "add")}>
                     Stage
                   </button>
                 </div>
@@ -146,17 +142,19 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
           >
             Staged
           </h2>
-          {staged.map((p) => (
-            <div key={p} className="file-item staged">
-              <div className="file-label" onClick={() => showFileDiff("staged", p)}>
-                <p className="commit-message">{p}</p>
-                <p className="commit-meta">staged</p>
-              </div>
-              <button onClick={() => toggleStage(p, "remove")}>
-                Unstage
-              </button>
-            </div>
-          ))}
+          <ul className="file-list">
+            {staged.map((f) => (
+              <li key={f.path} className="file-item staged">
+                <span className="file-label" onClick={() => showFileDiff("staged", f.path)}>
+                  <span className={"change-badge " + f.type}>{f.type[0].toUpperCase()}</span>
+                  {f.path}
+                </span>
+                <button onClick={() => toggleStage(f.path, "remove")}>
+                  Unstage
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

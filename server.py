@@ -80,6 +80,22 @@ class CommitDiffHandler(tornado.web.RequestHandler):
         self.write(response)
 
 
+def _status_type(flag: int, staged: bool = False) -> str:
+    if staged:
+        if flag & pygit2.GIT_STATUS_INDEX_NEW: return "added"
+        if flag & pygit2.GIT_STATUS_INDEX_DELETED: return "deleted"
+        if flag & pygit2.GIT_STATUS_INDEX_RENAMED: return "renamed"
+        if flag & pygit2.GIT_STATUS_INDEX_TYPECHANGE: return "typechange"
+        if flag & pygit2.GIT_STATUS_INDEX_MODIFIED: return "modified"
+    else:
+        if flag & pygit2.GIT_STATUS_WT_NEW: return "added"
+        if flag & pygit2.GIT_STATUS_WT_DELETED: return "deleted"
+        if flag & pygit2.GIT_STATUS_WT_RENAMED: return "renamed"
+        if flag & pygit2.GIT_STATUS_WT_TYPECHANGE: return "typechange"
+        if flag & pygit2.GIT_STATUS_WT_MODIFIED: return "modified"
+    return "unknown"
+
+
 class StatusHandler(tornado.web.RequestHandler):
     """API endpoint returning staged and unstaged file lists and current branch."""
 
@@ -93,12 +109,10 @@ class StatusHandler(tornado.web.RequestHandler):
         staged = []
         unstaged = []
         for path, flag in statuses.items():
-            # index flags indicate staged changes
             if flag & (pygit2.GIT_STATUS_INDEX_NEW | pygit2.GIT_STATUS_INDEX_MODIFIED | pygit2.GIT_STATUS_INDEX_DELETED | pygit2.GIT_STATUS_INDEX_RENAMED | pygit2.GIT_STATUS_INDEX_TYPECHANGE):
-                staged.append(path)
-            # worktree flags indicate unstaged changes
+                staged.append({"path": path, "type": _status_type(flag, staged=True)})
             if flag & (pygit2.GIT_STATUS_WT_MODIFIED | pygit2.GIT_STATUS_WT_DELETED | pygit2.GIT_STATUS_WT_NEW | pygit2.GIT_STATUS_WT_RENAMED | pygit2.GIT_STATUS_WT_TYPECHANGE):
-                unstaged.append(path)
+                unstaged.append({"path": path, "type": _status_type(flag, staged=False)})
 
         self.write({"current_branch": branch, "staged": staged, "unstaged": unstaged})
 
