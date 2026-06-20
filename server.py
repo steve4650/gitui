@@ -135,12 +135,14 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
 
 
 if __name__ == "__main__":
+    import os
+
     import tornado.httpserver
     import tornado.ioloop
 
     app = make_app()
     server = tornado.httpserver.HTTPServer(app)
-    port = 8000
+    port = int(os.environ.get("PORT", "8080"))
     server.listen(port)
     print(f"Serving gitui on http://localhost:{port}")
     tornado.ioloop.IOLoop.current().start()
