@@ -195,6 +195,36 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         )
         self.assertEqual(resp.code, 400)
 
+    def test_stage_deleted_file(self):
+        # create and commit a tracked file
+        self._write_file("to_delete.txt", "delete me\n")
+        self.repo.index.write()
+        self._commit("Add to_delete.txt")
+
+        # delete the file from disk
+        file_path = self.repo_path / "to_delete.txt"
+        file_path.unlink()
+
+        # verify it shows as unstaged
+        response = self.fetch("/api/status")
+        payload = json.loads(response.body)
+        self.assertIn("to_delete.txt", payload["unstaged"])
+
+        # stage the deletion
+        resp = self.fetch(
+            self.get_url("/api/stage"),
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"path": "to_delete.txt", "action": "add"}),
+        )
+        self.assertEqual(resp.code, 200)
+
+        # verify it moved to staged
+        response = self.fetch("/api/status")
+        payload = json.loads(response.body)
+        self.assertNotIn("to_delete.txt", payload.get("unstaged", []))
+        self.assertIn("to_delete.txt", payload["staged"])
+
 
 if __name__ == "__main__":
     tornado.testing.main()

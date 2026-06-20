@@ -119,7 +119,11 @@ class StageHandler(tornado.web.RequestHandler):
         index = self.repo.index
         if action == "add":
             try:
-                index.add(path)
+                full_path = os.path.join(self.repo.workdir, path) if self.repo.workdir else path
+                if os.path.exists(full_path):
+                    index.add(path)
+                else:
+                    index.remove(path)
             except Exception:
                 raise tornado.web.HTTPError(500, reason="Failed to add to index")
         else:
