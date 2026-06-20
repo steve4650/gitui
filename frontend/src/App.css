@@ -100,6 +100,18 @@ body.light .diff-line.hunk {
   color: #ffffff;
 }
 
+.commit-hash {
+  font-family: "Courier New", "MS Sans Serif", monospace;
+  color: #808080;
+  margin-right: 4px;
+  user-select: all;
+}
+
+.commit-button:hover .commit-hash,
+.commit-button.selected .commit-hash {
+  color: #c0c0c0;
+}
+
 .commit-message {
   font-weight: 400;
   font-size: 11px;

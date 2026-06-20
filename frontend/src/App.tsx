@@ -141,7 +141,9 @@ function App() {
             className={`commit-button ${commit.sha === selectedCommit ? "selected" : ""}`}
             onClick={() => setSelectedCommit(commit.sha)}
           >
-            <p className="commit-message">{commit.message}</p>
+            <p className="commit-message">
+              <span className="commit-hash">{commit.sha.slice(0, 7)}</span> {commit.message}
+            </p>
             <p className="commit-meta">
               {commit.author_name} · {new Date(commit.commit_time).toLocaleString()}
             </p>
@@ -153,7 +155,9 @@ function App() {
         {diff ? (
           <div>
             <div className="commit-meta">
-              <strong>{diff.message}</strong>
+              <strong>
+                <span className="commit-hash">{diff.sha.slice(0, 7)}</span> {diff.message}
+              </strong>
               <p>
                 {diff.author_name ?? ""} ·{" "}
                 {diff.commit_time ? new Date(diff.commit_time).toLocaleString() : ""}
