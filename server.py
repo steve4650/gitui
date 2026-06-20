@@ -223,16 +223,22 @@ class DiscardHandler(tornado.web.RequestHandler):
                 capture_output=True,
                 check=True,
             )
+            self.write({"status": "ok"})
+            return
         except subprocess.CalledProcessError:
-            # checkout fails for untracked files; delete them instead
+            pass
+
+        # git checkout failed – file is untracked; delete it instead
+        full_path = os.path.join(repo_dir, path)
+        if os.path.exists(full_path):
             try:
-                full_path = os.path.join(repo_dir, path)
-                if os.path.exists(full_path):
-                    os.remove(full_path)
+                os.remove(full_path)
             except Exception as exc:
                 raise tornado.web.HTTPError(500, reason=str(exc))
+            self.write({"status": "ok"})
+            return
 
-        self.write({"status": "ok"})
+        raise tornado.web.HTTPError(500, reason="Failed to discard changes")
 
 
 class HealthHandler(tornado.web.RequestHandler):
