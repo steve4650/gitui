@@ -8,3 +8,4 @@ ansible/roles/andromeda/files/*
 .ruff_cache
 .secrets.json
 secrets.json
+.pytest_cache
