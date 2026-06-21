@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -7,11 +8,14 @@ type Props = {
 };
 
 export default function CommitDialog({ open, onClose, onSubmit }: Props) {
+  const [message, setMessage] = useState("");
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    textRef.current?.focus();
+    setMessage("");
+    const t = setTimeout(() => textRef.current?.focus(), 0);
+    return () => clearTimeout(t);
   }, [open]);
 
   useEffect(() => {
@@ -29,17 +33,18 @@ export default function CommitDialog({ open, onClose, onSubmit }: Props) {
   if (!open) return null;
 
   function handleSubmit() {
-    const msg = textRef.current?.value.trim();
+    const msg = message.trim();
     if (!msg) return;
     onSubmit(msg);
   }
 
-  function handleOverlayClick(e: React.MouseEvent) {
-    if (e.target === e.currentTarget) onClose();
-  }
-
-  return (
-    <div className="win95-overlay" onClick={handleOverlayClick}>
+  return createPortal(
+    <div
+      className="win95-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="win95-dialog">
         <div className="win95-titlebar">
           <span className="win95-title">Commit</span>
@@ -57,6 +62,8 @@ export default function CommitDialog({ open, onClose, onSubmit }: Props) {
             className="win95-textarea"
             rows={4}
             placeholder="Enter commit message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
@@ -74,6 +81,7 @@ export default function CommitDialog({ open, onClose, onSubmit }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

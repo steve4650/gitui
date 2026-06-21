@@ -362,6 +362,7 @@ strong {
   border-color: #808080 #ffffff #ffffff #808080;
   font-family: "Courier New", "MS Sans Serif", monospace;
   font-size: 11px;
+  color: #000000;
   padding: 4px;
   resize: vertical;
   outline: none;
