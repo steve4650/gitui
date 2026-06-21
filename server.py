@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pygit2
 import tornado.web
+from pygit2.enums import BranchType
 
 
 def format_commit(commit: pygit2.Commit) -> dict[str, object]:
@@ -23,6 +24,98 @@ def make_repository(repo_root: str | None = None) -> pygit2.Repository:
     """Open a pygit2 repository rooted at repo_root or the current working directory."""
     repo_root = repo_root or os.getcwd()
     return pygit2.Repository(repo_root)
+
+
+def _build_ref_map(repo: pygit2.Repository) -> dict[str, list[str]]:
+    """Build a mapping of commit SHA -> list of ref names (HEAD, branches, remote branches)."""
+    ref_map: dict[str, list[str]] = {}
+
+    if not repo.head_is_unborn:
+        try:
+            head_commit = repo.head.peel(pygit2.Commit)
+            sha = str(head_commit.id)
+            ref_map.setdefault(sha, []).append(f"HEAD -> {repo.head.shorthand}")
+        except Exception:
+            pass
+
+    for branch_name in repo.listall_branches(BranchType.LOCAL):
+        try:
+            branch = repo.lookup_branch(branch_name)
+            sha = str(branch.target)
+            ref_map.setdefault(sha, []).append(str(branch_name))
+        except Exception:
+            pass
+
+    for branch_name in repo.listall_branches(BranchType.REMOTE):
+        try:
+            branch = repo.lookup_branch(branch_name, BranchType.REMOTE)
+            sha = str(branch.target)
+            ref_map.setdefault(sha, []).append(str(branch_name))
+        except Exception:
+            pass
+
+    return ref_map
+
+
+def _assign_graph_columns(commits: list[dict[str, object]], ref_map: dict[str, list[str]]) -> dict[str, int]:
+    """Assign a graph column (lane) to each commit by SHA.
+
+    Walks from newest to oldest.  HEAD → column 0.
+    Non-first parents of merges and their ancestry get new columns.
+    """
+    columns: dict[str, int] = {}
+    if not commits:
+        return columns
+
+    sha_list: list[str] = []
+    for c in commits:
+        s = c.get("sha")
+        if isinstance(s, str):
+            sha_list.append(s)
+
+    for i, sha in enumerate(sha_list):
+        if sha in columns:
+            continue
+
+        if i == 0:
+            columns[sha] = 0
+            continue
+
+        # Find a child (earlier in the list) that lists this sha as a parent
+        child_info: tuple[int, int] | None = None  # (child_index, parent_position)
+        for j in range(i):
+            cj = commits[j]
+            cp = cj.get("parents")
+            if isinstance(cp, list) and sha in cp:
+                for pi, p in enumerate(cp):
+                    if isinstance(p, str) and p == sha:
+                        child_info = (j, pi)
+                        break
+                break
+
+        if child_info:
+            child_idx, parent_pos = child_info
+            child_col = columns.get(sha_list[child_idx], 0)
+            if parent_pos == 0:
+                columns[sha] = child_col
+            else:
+                # Non-first parent – new branch column
+                used = set(columns.values())
+                col = 0
+                while col in used:
+                    col += 1
+                columns[sha] = col
+        elif sha in ref_map:
+            # Branch tip with no child in our window
+            used = set(columns.values())
+            col = 0
+            while col in used:
+                col += 1
+            columns[sha] = col
+        else:
+            columns[sha] = 0
+
+    return columns
 
 
 class CommitListHandler(tornado.web.RequestHandler):
@@ -44,7 +137,17 @@ class CommitListHandler(tornado.web.RequestHandler):
         for index, commit in enumerate(walker):
             if index >= 50:
                 break
-            commits.append(format_commit(commit))
+            c = format_commit(commit)
+            commits.append(c)
+
+        ref_map = _build_ref_map(self.repo)
+        columns = _assign_graph_columns(commits, ref_map)
+
+        for c in commits:
+            sha = c.get("sha")
+            if isinstance(sha, str):
+                c["refs"] = ref_map.get(sha, [])
+                c["graph_column"] = columns.get(sha, 0)
 
         self.write({"current_branch": branch_name, "commits": commits})
 
@@ -295,6 +398,40 @@ class DiscardHandler(tornado.web.RequestHandler):
         raise tornado.web.HTTPError(500, reason="Failed to discard changes")
 
 
+class PushHandler(tornado.web.RequestHandler):
+    """API endpoint to push the current branch to 'origin'."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
+        self.repo = repo
+
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
+        repo_dir = self.repo.workdir or os.getcwd()
+        try:
+            subprocess.run(["git", "push", "origin", "HEAD"], cwd=repo_dir, check=True, capture_output=True, text=True)
+            self.write({"status": "ok"})
+        except subprocess.CalledProcessError as exc:
+            raise tornado.web.HTTPError(500, reason=exc.stderr.strip()) from exc
+        except Exception as exc:
+            raise tornado.web.HTTPError(500, reason=str(exc)) from exc
+
+
+class PullHandler(tornado.web.RequestHandler):
+    """API endpoint to pull from 'origin' and merge into the current branch."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
+        self.repo = repo
+
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
+        repo_dir = self.repo.workdir or os.getcwd()
+        try:
+            subprocess.run(["git", "pull", "origin", "HEAD"], cwd=repo_dir, check=True, capture_output=True, text=True)
+            self.write({"status": "ok"})
+        except subprocess.CalledProcessError as exc:
+            raise tornado.web.HTTPError(500, reason=exc.stderr.strip()) from exc
+        except Exception as exc:
+            raise tornado.web.HTTPError(500, reason=str(exc)) from exc
+
+
 class HealthHandler(tornado.web.RequestHandler):
     """Simple health-check endpoint."""
 
@@ -316,6 +453,8 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
         (r"/api/commit", CommitCreateHandler, dict(repo=repo)),
         (r"/api/discard", DiscardHandler, dict(repo=repo)),
         (r"/api/diff", GitDiffHandler, dict(repo=repo)),
+        (r"/api/push", PushHandler, dict(repo=repo)),
+        (r"/api/pull", PullHandler, dict(repo=repo)),
         (r"/api/health", HealthHandler),
     ]
 

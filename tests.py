@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -275,6 +276,88 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         payload = json.loads(response.body)
         self.assertNotIn("a.txt", self._staged_paths(payload))
         self.assertNotIn("b.txt", self._staged_paths(payload))
+
+    def test_push_and_pull_with_local_remote(self):
+        # set up a bare remote repo inside the test workspace
+        remote_dir = self.repo_path / "remote.git"
+        subprocess.run(
+            ["git", "init", "--bare", str(remote_dir)],
+            check=True,
+            capture_output=True,
+        )
+
+        # add the remote and push to it
+        try:
+            self.repo.remotes.create("origin", str(remote_dir))
+        except Exception:
+            self.repo.remotes.set_url("origin", str(remote_dir))
+        (self.repo_path / ".gitignore").write_text("remote.git\nclone\n", encoding="utf-8")
+        resp = self.fetch(self.get_url("/api/push"), method="POST", body="")
+        self.assertEqual(resp.code, 200)
+
+        # make an extra commit
+        self._write_file("new.txt", "pushed content\n")
+        self.repo.index.write()
+        self._commit("Push test commit")
+
+        # push again
+        resp = self.fetch(self.get_url("/api/push"), method="POST", body="")
+        self.assertEqual(resp.code, 200)
+
+        # clone a second repo from the remote (simulate another collaborator)
+        clone_dir = self.repo_path / "clone"
+        subprocess.run(
+            ["git", "clone", str(remote_dir), str(clone_dir)],
+            check=True,
+            capture_output=True,
+        )
+
+        # make a commit in the clone
+        subprocess.run(
+            ["git", "config", "user.email", "clone@test.com"],
+            cwd=clone_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Clone User"],
+            cwd=clone_dir,
+            check=True,
+            capture_output=True,
+        )
+        clone_file = Path(clone_dir) / "clone.txt"
+        clone_file.write_text("from clone\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "add", "."],
+            cwd=clone_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "Clone commit"],
+            cwd=clone_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "push"],
+            cwd=clone_dir,
+            check=True,
+            capture_output=True,
+        )
+
+        # now pull into the original repo
+        resp = self.fetch(self.get_url("/api/pull"), method="POST", body="")
+        self.assertEqual(resp.code, 200)
+
+        # verify the clone's commit is now in the original repo
+        response = self.fetch("/api/commits")
+        payload = json.loads(response.body)
+        self.assertEqual(payload["commits"][0]["message"], "Clone commit")
+
+    def test_push_without_remote_returns_error(self):
+        resp = self.fetch(self.get_url("/api/push"), method="POST", body="")
+        self.assertEqual(resp.code, 500)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import CommitDialog from "./CommitDialog";
 
 type Props = {
   onRefresh: () => void;
@@ -10,6 +11,7 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
   const [unstaged, setUnstaged] = useState<{ path: string; type: string }[]>([]);
   const [branch, setBranch] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showCommitDialog, setShowCommitDialog] = useState(false);
 
   async function loadStatus() {
     setError(null);
@@ -77,8 +79,11 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
 
   async function commitStaged() {
     if (!staged.length) return;
-    const message = window.prompt("Commit message", "");
-    if (!message) return;
+    setShowCommitDialog(true);
+  }
+
+  async function handleCommit(message: string) {
+    setShowCommitDialog(false);
     const res = await fetch("/api/commit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -89,6 +94,29 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
       onRefresh();
     } else {
       setError("Failed to create commit");
+    }
+  }
+
+  async function handlePush() {
+    setError(null);
+    const res = await fetch("/api/push", { method: "POST" });
+    if (res.ok) {
+      onRefresh();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      setError(body.reason || "Push failed");
+    }
+  }
+
+  async function handlePull() {
+    setError(null);
+    const res = await fetch("/api/pull", { method: "POST" });
+    if (res.ok) {
+      await loadStatus();
+      onRefresh();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      setError(body.reason || "Pull failed");
     }
   }
 
@@ -108,16 +136,25 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
 
   return (
     <div>
+      <CommitDialog
+        open={showCommitDialog}
+        onClose={() => setShowCommitDialog(false)}
+        onSubmit={handleCommit}
+      />
       <div style={{ padding: "6px 8px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <strong>branch: {branch ?? "-"}</strong>
-          <div style={{ display: "flex", gap: 8 }}>
-            {staged.length > 0 && (
-              <button className="theme-toggle" onClick={commitStaged} title="Commit staged changes">
-                Commit
-              </button>
-            )}
-          </div>
+        <strong>branch: {branch ?? "-"}</strong>
+        <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+          <button className="theme-toggle" onClick={handlePush} title="Push to remote">
+            Push
+          </button>
+          <button className="theme-toggle" onClick={handlePull} title="Pull from remote">
+            Pull
+          </button>
+          {staged.length > 0 && (
+            <button className="theme-toggle" onClick={commitStaged} title="Commit staged changes">
+              Commit
+            </button>
+          )}
         </div>
       </div>
 
