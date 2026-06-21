@@ -31,7 +31,7 @@ def lint():
 
 def test():
     """Run tests."""
-    run("uv run pytest tests.py")
+    run("uv run pytest --verbosity=1 tests.py")
 
 
 def dev():
