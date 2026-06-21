@@ -295,6 +295,40 @@ class DiscardHandler(tornado.web.RequestHandler):
         raise tornado.web.HTTPError(500, reason="Failed to discard changes")
 
 
+class PushHandler(tornado.web.RequestHandler):
+    """API endpoint to push the current branch to 'origin'."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
+        self.repo = repo
+
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
+        repo_dir = self.repo.workdir or os.getcwd()
+        try:
+            subprocess.run(["git", "push"], cwd=repo_dir, check=True, capture_output=True, text=True)
+            self.write({"status": "ok"})
+        except subprocess.CalledProcessError as exc:
+            raise tornado.web.HTTPError(500, reason=exc.stderr.strip()) from exc
+        except Exception as exc:
+            raise tornado.web.HTTPError(500, reason=str(exc)) from exc
+
+
+class PullHandler(tornado.web.RequestHandler):
+    """API endpoint to pull from 'origin' and merge into the current branch."""
+
+    def initialize(self, repo: pygit2.Repository) -> None:  # ty:ignore[invalid-method-override]
+        self.repo = repo
+
+    async def post(self) -> None:  # ty:ignore[invalid-method-override]
+        repo_dir = self.repo.workdir or os.getcwd()
+        try:
+            subprocess.run(["git", "pull"], cwd=repo_dir, check=True, capture_output=True, text=True)
+            self.write({"status": "ok"})
+        except subprocess.CalledProcessError as exc:
+            raise tornado.web.HTTPError(500, reason=exc.stderr.strip()) from exc
+        except Exception as exc:
+            raise tornado.web.HTTPError(500, reason=str(exc)) from exc
+
+
 class HealthHandler(tornado.web.RequestHandler):
     """Simple health-check endpoint."""
 
@@ -316,6 +350,8 @@ def make_app(repo_root: str | None = None) -> tornado.web.Application:
         (r"/api/commit", CommitCreateHandler, dict(repo=repo)),
         (r"/api/discard", DiscardHandler, dict(repo=repo)),
         (r"/api/diff", GitDiffHandler, dict(repo=repo)),
+        (r"/api/push", PushHandler, dict(repo=repo)),
+        (r"/api/pull", PullHandler, dict(repo=repo)),
         (r"/api/health", HealthHandler),
     ]
 

@@ -97,6 +97,29 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
     }
   }
 
+  async function handlePush() {
+    setError(null);
+    const res = await fetch("/api/push", { method: "POST" });
+    if (res.ok) {
+      onRefresh();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      setError(body.reason || "Push failed");
+    }
+  }
+
+  async function handlePull() {
+    setError(null);
+    const res = await fetch("/api/pull", { method: "POST" });
+    if (res.ok) {
+      await loadStatus();
+      onRefresh();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      setError(body.reason || "Pull failed");
+    }
+  }
+
   async function showFileDiff(scope: "staged" | "unstaged", path?: string) {
     const url = new URL("/api/diff", window.location.origin);
     url.searchParams.set("scope", scope);
@@ -122,6 +145,12 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <strong>branch: {branch ?? "-"}</strong>
           <div style={{ display: "flex", gap: 8 }}>
+            <button className="theme-toggle" onClick={handlePush} title="Push to remote">
+              Push
+            </button>
+            <button className="theme-toggle" onClick={handlePull} title="Pull from remote">
+              Pull
+            </button>
             {staged.length > 0 && (
               <button className="theme-toggle" onClick={commitStaged} title="Commit staged changes">
                 Commit
