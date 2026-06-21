@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import StatusPanel from "./components/StatusPanel";
+import GitGraphRow, { useMaxCol } from "./components/GitGraph";
 
 type Commit = {
   sha: string;
@@ -9,11 +10,58 @@ type Commit = {
   author_email: string;
   commit_time: string;
   parents: string[];
+  refs: string[];
+  graph_column: number;
 };
 
 type CommitDiff = Commit & {
   patch: string;
 };
+
+function GitGraphOverlay({
+  commits,
+  selectedCommit,
+  onSelect,
+}: {
+  commits: Commit[];
+  selectedCommit: string | null;
+  onSelect: (sha: string) => void;
+}) {
+  const maxCol = useMaxCol(commits);
+
+  return (
+    <div className="git-graph-overlay">
+      {commits.map((commit) => (
+        <div key={commit.sha} className="commit-row">
+          <GitGraphRow commit={commit} commits={commits} maxCol={maxCol} />
+          <button
+            className={`commit-button ${commit.sha === selectedCommit ? "selected" : ""}`}
+            onClick={() => onSelect(commit.sha)}
+          >
+            <p className="commit-message">
+              {commit.refs.length ? (
+                <span className="commit-refs">
+                  {commit.refs.map((ref) => (
+                    <span
+                      key={ref}
+                      className={`commit-ref ${ref.startsWith("HEAD") ? "ref-head" : ref.startsWith("origin") ? "ref-remote" : "ref-branch"}`}
+                    >
+                      {ref}
+                    </span>
+                  ))}{" "}
+                </span>
+              ) : null}
+              <span className="commit-hash">{commit.sha.slice(0, 7)}</span> {commit.message}
+            </p>
+            <p className="commit-meta">
+              {commit.author_name} · {new Date(commit.commit_time).toLocaleString()}
+            </p>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function App() {
   const [commits, setCommits] = useState<Commit[]>([]);
@@ -128,6 +176,8 @@ function App() {
               author_email: "",
               commit_time: new Date().toISOString(),
               parents: [],
+              refs: [],
+              graph_column: 0,
               patch,
             });
           }}
@@ -135,20 +185,11 @@ function App() {
         <h1>Commit history</h1>
         {loadingCommits && <p className="loading">Loading commits...</p>}
         {error && <p className="loading">{error}</p>}
-        {commits.map((commit) => (
-          <button
-            key={commit.sha}
-            className={`commit-button ${commit.sha === selectedCommit ? "selected" : ""}`}
-            onClick={() => setSelectedCommit(commit.sha)}
-          >
-            <p className="commit-message">
-              <span className="commit-hash">{commit.sha.slice(0, 7)}</span> {commit.message}
-            </p>
-            <p className="commit-meta">
-              {commit.author_name} · {new Date(commit.commit_time).toLocaleString()}
-            </p>
-          </button>
-        ))}
+        <GitGraphOverlay
+          commits={commits}
+          selectedCommit={selectedCommit}
+          onSelect={setSelectedCommit}
+        />
       </aside>
       <main className="main">
         {loadingDiff && <p className="loading">Loading patch...</p>}

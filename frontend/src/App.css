@@ -81,7 +81,7 @@ body.light .diff-line.hunk {
 }
 
 .commit-button {
-  width: 100%;
+  flex: 1;
   text-align: left;
   background: #c0c0c0;
   border: 2px solid;
@@ -91,13 +91,69 @@ body.light .diff-line.hunk {
   font-family: "Courier New", "MS Sans Serif", monospace;
   font-size: 11px;
   cursor: pointer;
-  display: block;
+  min-height: 48px;
 }
 
 .commit-button:hover,
 .commit-button.selected {
   background: #000080;
   color: #ffffff;
+}
+
+.commit-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.git-graph-cell {
+  flex-shrink: 0;
+  display: block;
+  overflow: visible;
+}
+
+.git-graph-overlay {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.commit-refs {
+  display: inline-flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  vertical-align: middle;
+}
+
+.commit-ref {
+  font-size: 9px;
+  font-family: "Courier New", "MS Sans Serif", monospace;
+  padding: 0 3px;
+  border: 1px solid;
+  line-height: 14px;
+  user-select: all;
+}
+
+.ref-head {
+  background: #000080;
+  color: #ffffff;
+  border-color: #000080;
+}
+
+.ref-branch {
+  background: #008080;
+  color: #ffffff;
+  border-color: #008080;
+}
+
+.ref-remote {
+  background: #800080;
+  color: #ffffff;
+  border-color: #800080;
+}
+
+.commit-button:hover .commit-ref,
+.commit-button.selected .commit-ref {
+  opacity: 0.9;
 }
 
 .commit-hash {

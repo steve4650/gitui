@@ -278,8 +278,8 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         self.assertNotIn("b.txt", self._staged_paths(payload))
 
     def test_push_and_pull_with_local_remote(self):
-        # set up a bare remote repo
-        remote_dir = self.repo_path.parent / "remote.git"
+        # set up a bare remote repo inside the test workspace
+        remote_dir = self.repo_path / "remote.git"
         subprocess.run(
             ["git", "init", "--bare", str(remote_dir)],
             check=True,
@@ -287,7 +287,11 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         )
 
         # add the remote and push to it
-        self.repo.remotes.set_url("origin", str(remote_dir))
+        try:
+            self.repo.remotes.create("origin", str(remote_dir))
+        except Exception:
+            self.repo.remotes.set_url("origin", str(remote_dir))
+        (self.repo_path / ".gitignore").write_text("remote.git\nclone\n", encoding="utf-8")
         resp = self.fetch(self.get_url("/api/push"), method="POST", body="")
         self.assertEqual(resp.code, 200)
 
@@ -301,7 +305,7 @@ class GitServerTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(resp.code, 200)
 
         # clone a second repo from the remote (simulate another collaborator)
-        clone_dir = self.repo_path.parent / "clone"
+        clone_dir = self.repo_path / "clone"
         subprocess.run(
             ["git", "clone", str(remote_dir), str(clone_dir)],
             check=True,

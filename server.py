@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pygit2
 import tornado.web
+from pygit2.enums import BranchType
 
 
 def format_commit(commit: pygit2.Commit) -> dict[str, object]:
@@ -23,6 +24,83 @@ def make_repository(repo_root: str | None = None) -> pygit2.Repository:
     """Open a pygit2 repository rooted at repo_root or the current working directory."""
     repo_root = repo_root or os.getcwd()
     return pygit2.Repository(repo_root)
+
+
+def _build_ref_map(repo: pygit2.Repository) -> dict[str, list[str]]:
+    """Build a mapping of commit SHA -> list of ref names (HEAD, branches, remote branches)."""
+    ref_map: dict[str, list[str]] = {}
+
+    if not repo.head_is_unborn:
+        try:
+            head_commit = repo.head.peel(pygit2.Commit)
+            sha = str(head_commit.id)
+            ref_map.setdefault(sha, []).append(f"HEAD -> {repo.head.shorthand}")
+        except Exception:
+            pass
+
+    for branch_name in repo.listall_branches(BranchType.LOCAL):
+        try:
+            branch = repo.lookup_branch(branch_name)
+            sha = str(branch.target)
+            ref_map.setdefault(sha, []).append(str(branch_name))
+        except Exception:
+            pass
+
+    for branch_name in repo.listall_branches(BranchType.REMOTE):
+        try:
+            branch = repo.lookup_branch(branch_name, BranchType.REMOTE)
+            sha = str(branch.target)
+            ref_map.setdefault(sha, []).append(str(branch_name))
+        except Exception:
+            pass
+
+    return ref_map
+
+
+def _assign_graph_columns(commits: list[dict[str, object]], ref_map: dict[str, list[str]]) -> dict[str, int]:
+    """Assign a graph column (lane) to each commit by SHA.
+
+    Column 0 is the main line (HEAD ancestry via first-parent chain).
+    Branch tips refs that diverge from it get columns 1, 2, …
+    """
+    columns: dict[str, int] = {}
+    if not commits:
+        return columns
+
+    sha_list: list[str] = []
+    for c in commits:
+        s = c.get("sha")
+        if isinstance(s, str):
+            sha_list.append(s)
+    sha_set = set(sha_list)
+
+    # Build first-parent chain for the HEAD ancestry
+    first_parents: set[str] = set()
+    if sha_list:
+        cur: str | None = sha_list[0]
+        while cur:
+            first_parents.add(cur)
+            for c in commits:
+                if c.get("sha") == cur:
+                    p = c.get("parents")
+                    if isinstance(p, list) and len(p) > 0:
+                        parent = p[0]
+                        cur = parent if isinstance(parent, str) and parent in sha_set else None
+                    else:
+                        cur = None
+                    break
+            else:
+                break
+
+    next_column = 0
+    for sha in sha_list:
+        if sha in first_parents:
+            columns[sha] = 0
+        else:
+            next_column += 1
+            columns[sha] = next_column
+
+    return columns
 
 
 class CommitListHandler(tornado.web.RequestHandler):
@@ -44,7 +122,17 @@ class CommitListHandler(tornado.web.RequestHandler):
         for index, commit in enumerate(walker):
             if index >= 50:
                 break
-            commits.append(format_commit(commit))
+            c = format_commit(commit)
+            commits.append(c)
+
+        ref_map = _build_ref_map(self.repo)
+        columns = _assign_graph_columns(commits, ref_map)
+
+        for c in commits:
+            sha = c.get("sha")
+            if isinstance(sha, str):
+                c["refs"] = ref_map.get(sha, [])
+                c["graph_column"] = columns.get(sha, 0)
 
         self.write({"current_branch": branch_name, "commits": commits})
 
@@ -304,7 +392,7 @@ class PushHandler(tornado.web.RequestHandler):
     async def post(self) -> None:  # ty:ignore[invalid-method-override]
         repo_dir = self.repo.workdir or os.getcwd()
         try:
-            subprocess.run(["git", "push"], cwd=repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "push", "origin", "HEAD"], cwd=repo_dir, check=True, capture_output=True, text=True)
             self.write({"status": "ok"})
         except subprocess.CalledProcessError as exc:
             raise tornado.web.HTTPError(500, reason=exc.stderr.strip()) from exc
@@ -321,7 +409,7 @@ class PullHandler(tornado.web.RequestHandler):
     async def post(self) -> None:  # ty:ignore[invalid-method-override]
         repo_dir = self.repo.workdir or os.getcwd()
         try:
-            subprocess.run(["git", "pull"], cwd=repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "pull", "origin", "HEAD"], cwd=repo_dir, check=True, capture_output=True, text=True)
             self.write({"status": "ok"})
         except subprocess.CalledProcessError as exc:
             raise tornado.web.HTTPError(500, reason=exc.stderr.strip()) from exc
