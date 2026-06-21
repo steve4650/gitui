@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 export const ROW_H = 52;
-const COL_W = 18;
+const COL_W = 14;
 const PAD_X = 8;
 const DOT_R = 5;
 

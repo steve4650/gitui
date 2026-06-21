@@ -112,6 +112,7 @@ body.light .diff-line.hunk {
   flex-shrink: 0;
   display: block;
   overflow: visible;
+  height: 52px;
 }
 
 .git-graph-overlay {
@@ -175,11 +176,17 @@ body.light .diff-line.hunk {
   font-weight: 400;
   font-size: 11px;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .commit-meta {
   color: #000000;
   font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .commit-button:hover .commit-meta,
