@@ -142,21 +142,19 @@ export default function StatusPanel({ onRefresh, onShowDiff }: Props) {
         onSubmit={handleCommit}
       />
       <div style={{ padding: "6px 8px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <strong>branch: {branch ?? "-"}</strong>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="theme-toggle" onClick={handlePush} title="Push to remote">
-              Push
+        <strong>branch: {branch ?? "-"}</strong>
+        <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+          <button className="theme-toggle" onClick={handlePush} title="Push to remote">
+            Push
+          </button>
+          <button className="theme-toggle" onClick={handlePull} title="Pull from remote">
+            Pull
+          </button>
+          {staged.length > 0 && (
+            <button className="theme-toggle" onClick={commitStaged} title="Commit staged changes">
+              Commit
             </button>
-            <button className="theme-toggle" onClick={handlePull} title="Pull from remote">
-              Pull
-            </button>
-            {staged.length > 0 && (
-              <button className="theme-toggle" onClick={commitStaged} title="Commit staged changes">
-                Commit
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
