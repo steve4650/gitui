@@ -82,9 +82,6 @@ body.light .diff-line.hunk {
 }
 
 .commit-button {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
   text-align: left;
   background: #c0c0c0;
   border: 2px solid;
@@ -94,7 +91,9 @@ body.light .diff-line.hunk {
   font-family: "Courier New", "MS Sans Serif", monospace;
   font-size: 11px;
   cursor: pointer;
-  min-height: 48px;
+  height: 52px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .commit-button:hover,
@@ -103,22 +102,21 @@ body.light .diff-line.hunk {
   color: #ffffff;
 }
 
-.commit-row {
-  display: flex;
-  align-items: stretch;
-}
-
-.git-graph-cell {
-  flex-shrink: 0;
-  display: block;
-  overflow: visible;
-  height: 52px;
-}
-
 .git-graph-overlay {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0;
+}
+
+.git-graph-svg {
+  display: block;
+}
+
+.commit-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .commit-refs {
