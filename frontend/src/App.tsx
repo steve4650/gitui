@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import StatusPanel from "./components/StatusPanel";
-import GitGraphRow, { useMaxCol } from "./components/GitGraph";
+import GitGraphRow, { useMaxCol, computeActiveColumns } from "./components/GitGraph";
 
 type Commit = {
   sha: string;
@@ -28,12 +28,18 @@ function GitGraphOverlay({
   onSelect: (sha: string) => void;
 }) {
   const maxCol = useMaxCol(commits);
+  const activeColumns = useMemo(() => computeActiveColumns(commits), [commits]);
 
   return (
     <div className="git-graph-overlay">
-      {commits.map((commit) => (
+      {commits.map((commit, i) => (
         <div key={commit.sha} className="commit-row">
-          <GitGraphRow commit={commit} commits={commits} maxCol={maxCol} />
+          <GitGraphRow
+            commit={commit}
+            commits={commits}
+            activeColumns={[...activeColumns[i]]}
+            maxCol={maxCol}
+          />
           <button
             className={`commit-button ${commit.sha === selectedCommit ? "selected" : ""}`}
             onClick={() => onSelect(commit.sha)}

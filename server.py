@@ -60,8 +60,8 @@ def _build_ref_map(repo: pygit2.Repository) -> dict[str, list[str]]:
 def _assign_graph_columns(commits: list[dict[str, object]], ref_map: dict[str, list[str]]) -> dict[str, int]:
     """Assign a graph column (lane) to each commit by SHA.
 
-    Column 0 is the main line (HEAD ancestry via first-parent chain).
-    Branch tips refs that diverge from it get columns 1, 2, …
+    Walks from newest to oldest.  HEAD → column 0.
+    Non-first parents of merges and their ancestry get new columns.
     """
     columns: dict[str, int] = {}
     if not commits:
@@ -72,33 +72,48 @@ def _assign_graph_columns(commits: list[dict[str, object]], ref_map: dict[str, l
         s = c.get("sha")
         if isinstance(s, str):
             sha_list.append(s)
-    sha_set = set(sha_list)
 
-    # Build first-parent chain for the HEAD ancestry
-    first_parents: set[str] = set()
-    if sha_list:
-        cur: str | None = sha_list[0]
-        while cur:
-            first_parents.add(cur)
-            for c in commits:
-                if c.get("sha") == cur:
-                    p = c.get("parents")
-                    if isinstance(p, list) and len(p) > 0:
-                        parent = p[0]
-                        cur = parent if isinstance(parent, str) and parent in sha_set else None
-                    else:
-                        cur = None
-                    break
-            else:
+    for i, sha in enumerate(sha_list):
+        if sha in columns:
+            continue
+
+        if i == 0:
+            columns[sha] = 0
+            continue
+
+        # Find a child (earlier in the list) that lists this sha as a parent
+        child_info: tuple[int, int] | None = None  # (child_index, parent_position)
+        for j in range(i):
+            cj = commits[j]
+            cp = cj.get("parents")
+            if isinstance(cp, list) and sha in cp:
+                for pi, p in enumerate(cp):
+                    if isinstance(p, str) and p == sha:
+                        child_info = (j, pi)
+                        break
                 break
 
-    next_column = 0
-    for sha in sha_list:
-        if sha in first_parents:
-            columns[sha] = 0
+        if child_info:
+            child_idx, parent_pos = child_info
+            child_col = columns.get(sha_list[child_idx], 0)
+            if parent_pos == 0:
+                columns[sha] = child_col
+            else:
+                # Non-first parent – new branch column
+                used = set(columns.values())
+                col = 0
+                while col in used:
+                    col += 1
+                columns[sha] = col
+        elif sha in ref_map:
+            # Branch tip with no child in our window
+            used = set(columns.values())
+            col = 0
+            while col in used:
+                col += 1
+            columns[sha] = col
         else:
-            next_column += 1
-            columns[sha] = next_column
+            columns[sha] = 0
 
     return columns
 
