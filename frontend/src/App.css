@@ -69,6 +69,7 @@ body.light .diff-line.hunk {
   flex-direction: column;
   gap: 2px;
   align-items: stretch;
+  overflow-x: hidden;
 }
 
 .sidebar h1 {
@@ -82,6 +83,8 @@ body.light .diff-line.hunk {
 
 .commit-button {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
   text-align: left;
   background: #c0c0c0;
   border: 2px solid;
