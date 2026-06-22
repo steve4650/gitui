@@ -91,9 +91,8 @@ body.light .diff-line.hunk {
   font-family: "Courier New", "MS Sans Serif", monospace;
   font-size: 11px;
   cursor: pointer;
-  height: 52px;
+  min-height: 52px;
   min-width: 0;
-  overflow: hidden;
 }
 
 .commit-button:hover,
@@ -106,6 +105,7 @@ body.light .diff-line.hunk {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0;
+  align-items: start;
 }
 
 .git-graph-svg {
@@ -174,16 +174,12 @@ body.light .diff-line.hunk {
   font-weight: 400;
   font-size: 11px;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .commit-meta {
   color: #000000;
   font-size: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

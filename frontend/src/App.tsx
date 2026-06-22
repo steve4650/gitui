@@ -38,6 +38,7 @@ function GitGraphOverlay({
             key={commit.sha}
             className={`commit-button ${commit.sha === selectedCommit ? "selected" : ""}`}
             onClick={() => onSelect(commit.sha)}
+            title={`${commit.message}\n${commit.author_name} · ${new Date(commit.commit_time).toLocaleString()}\n${commit.sha}${commit.refs.length ? "\n" + commit.refs.join(", ") : ""}`}
           >
             <p className="commit-message">
               {commit.refs.length ? (
@@ -52,7 +53,8 @@ function GitGraphOverlay({
                   ))}{" "}
                 </span>
               ) : null}
-              <span className="commit-hash">{commit.sha.slice(0, 7)}</span> {commit.message}
+              <span className="commit-hash">{commit.sha.slice(0, 7)}</span>{" "}
+              {commit.message.length > 30 ? commit.message.slice(0, 30) + "..." : commit.message}
             </p>
             <p className="commit-meta">
               {commit.author_name} · {new Date(commit.commit_time).toLocaleString()}
