@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import StatusPanel from "./components/StatusPanel";
-import GitGraphRow, { useMaxCol, computeActiveColumns } from "./components/GitGraph";
+import GitGraphSVG, { useMaxCol } from "./components/GitGraph";
 
 type Commit = {
   sha: string;
@@ -28,21 +28,17 @@ function GitGraphOverlay({
   onSelect: (sha: string) => void;
 }) {
   const maxCol = useMaxCol(commits);
-  const activeColumns = useMemo(() => computeActiveColumns(commits), [commits]);
 
   return (
     <div className="git-graph-overlay">
-      {commits.map((commit, i) => (
-        <div key={commit.sha} className="commit-row">
-          <GitGraphRow
-            commit={commit}
-            commits={commits}
-            activeColumns={[...activeColumns[i]]}
-            maxCol={maxCol}
-          />
+      <GitGraphSVG commits={commits} maxCol={maxCol} />
+      <div className="commit-list">
+        {commits.map((commit) => (
           <button
+            key={commit.sha}
             className={`commit-button ${commit.sha === selectedCommit ? "selected" : ""}`}
             onClick={() => onSelect(commit.sha)}
+            title={`${commit.message}\n${commit.author_name} · ${new Date(commit.commit_time).toLocaleString()}\n${commit.sha}${commit.refs.length ? "\n" + commit.refs.join(", ") : ""}`}
           >
             <p className="commit-message">
               {commit.refs.length ? (
@@ -57,14 +53,15 @@ function GitGraphOverlay({
                   ))}{" "}
                 </span>
               ) : null}
-              <span className="commit-hash">{commit.sha.slice(0, 7)}</span> {commit.message}
+              <span className="commit-hash">{commit.sha.slice(0, 7)}</span>{" "}
+              {commit.message.length > 30 ? commit.message.slice(0, 30) + "..." : commit.message}
             </p>
             <p className="commit-meta">
               {commit.author_name} · {new Date(commit.commit_time).toLocaleString()}
             </p>
           </button>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
